@@ -14,6 +14,14 @@ unless (flock($script_fh, LOCK_EX|LOCK_NB)) {
     exit(1);
 }
 
+###### Se valida ejecucion de IniPro######
+# Si no existen las variables de ambiente sabemos que IniPro no se ejecuto
+if (!exists($ENV{"MAEDIR"}) && !exists($ENV{"PROCDIR"})) 
+{
+	 print "Previamente debe ejecutar el comando IniPro\n";
+     exit(1);	  
+} 
+
 ###### MENU ##############################
 ###### Si no ingresa ningún parametro se mostrará la ayuda
 my $num_parametros = $#ARGV + 1;
