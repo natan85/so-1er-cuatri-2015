@@ -16,7 +16,7 @@ unless (flock($script_fh, LOCK_EX|LOCK_NB)) {
 
 ###### Se valida ejecucion de IniPro######
 # Si no existen las variables de ambiente sabemos que IniPro no se ejecuto
-if (!exists($ENV{"MAEDIR"}) && !exists($ENV{"PROCDIR"})) 
+if (!exists($ENV{"MAEDIR"}) && !exists($ENV{"PROCDIR"}) && !exists($ENV{"INFODIR"}) ) 
 {
 	 print "Previamente debe ejecutar el comando IniPro\n";
      exit(1);	  
@@ -34,7 +34,7 @@ if ($num_parametros < 1) {
 	my $primero=$ARGV[0];
 
 	if($primero eq "-a") { mostrarAyuda(); }
-	elsif ($primero eq "-c") { consultar();}
+	elsif($primero eq "-c") { consultar();}
 	elsif($primero eq "-g") { grabar();}
 	elsif($primero eq "-i") { informar(); }
 	elsif($primero eq "-e") { estadisticas();}
@@ -58,6 +58,13 @@ sub mostrarAyuda {
 
 sub grabar{
 	print "Se eligió -g\n"; 
+	my $ruta = $ENV{"INFODIR"};
+	my $epoc = time();
+	my $str = "Dato de prueba.";
+	my $nombreArchivo = $ruta."/resultado_".$epoc;
+	open FILE, ">".$nombreArchivo or die $!; 
+	print FILE $str; 
+	close FILE;
 }
 
 sub consultar{
