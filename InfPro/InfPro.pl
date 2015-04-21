@@ -72,9 +72,44 @@ sub consultar{
 	if($num_parametros == 1){
 		print "Debe ingresar al menos una palabra clave\n";
 	}else{
-		print "Se eligió -c\n";	
+		print "Se eligió -c\n";
+		leerTodosArchivos();	
+		#leerarchivos();
 	}
 	 
+}
+
+sub leerTodosArchivos{
+	my $ruta = $ENV{"NOVEDIR"};
+	opendir (DIR, $ruta) or die $!;
+
+	while (my $file = readdir(DIR)) {
+		my $filename = $ruta.'/'.$file;
+		open(my $fh, '<:encoding(UTF-8)', $filename)
+		 or die "Could not open file '$filename' $!";
+		 
+		while (my $row = <$fh>) {
+		  chomp $row;
+		  print "$row\n";
+		#leerArchivo($file);
+		}
+   	 }
+    	closedir(DIR);	
+}
+
+#TODO: Llamar a esta funcion 
+sub leerArchivo{
+	my $ruta = $ENV{"NOVEDIR"};
+	#my $file = _@;
+	my $filename = $ruta.'/';#.$file;
+	open(my $fh, '<:encoding(UTF-8)', $filename)
+	  or die "Could not open file '$filename' $!";
+	 
+	while (my $row = <$fh>) {
+	  chomp $row;
+	  print "$row\n";
+	}
+
 }
 
 sub informar{
