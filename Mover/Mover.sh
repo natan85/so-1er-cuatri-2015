@@ -17,8 +17,8 @@
 # *******************************************************************
 # Ejemplos de uso:
 # ./Mover.sh "../NOVEDIR/archivo1.txt" "../RECHDIR" "ProPro"
-# ./Mover.sh "../NOVEDIR/archivo2.pdf" "../ACEPDIR" "RecPro"
-# ./Mover.sh "../NOVEDIR/archivo3.bin" "../PROCDIR" "InsPro"
+# ./Mover.sh "../NOVEDIR/archivo2" "../ACEPDIR" "RecPro"
+# ./Mover.sh "../NOVEDIR/archivo3.sh" "../PROCDIR" "InsPro"
 # *******************************************************************
 # *******************************************************************
 
@@ -30,6 +30,9 @@
 
 # ubicacion relativa esperada del archivo de configuracion
 CONFIG="../CONFDIR/InsPro.conf"
+
+# comando por default (si no hay tercer parametro)
+COMANDO="Mover"
 
 # ***************************************************
 # Verificaciones
@@ -64,12 +67,11 @@ fi
 archivo=$1
 destino=$2
 
-# si no existe el parametro opcional, se usa "Mover"
 if [ $# -ge 3 ]
 then
 	comando=$3
 else	
-	comando="Mover"
+	comando=$COMANDO
 fi
 
 # ***************************************************
@@ -77,7 +79,7 @@ fi
 # verificar el archivo a mover
 if [ ! -e "$archivo" ]
 then
-	./Glog.sh "$comando"  "Mover: El archivo a $archivo no existe" "ERR"
+	./Glog.sh "$comando"  "El archivo $archivo no existe" "ERR"
 	echo "[Mover] Error: el archivo $archivo no existe"
 	exit 1
 fi
@@ -85,7 +87,7 @@ fi
 # verificar el directorio de destino
 if [ ! -d "$destino" ]
 then
-	./Glog.sh "$comando"  "Mover: El directorio $destino no existe" "ERR"
+	./Glog.sh "$comando"  "El directorio $destino no existe" "ERR"
 	echo "[Mover] Error: el directorio $destino no existe"
 	exit 1
 fi
@@ -94,7 +96,7 @@ fi
 origen="${archivo%/*}"
 if [ "$origen" == "$destino" ]
 then
-	./Glog.sh "$comando" "Mover: Directorios de origen y destino son iguales" "ERR"
+	./Glog.sh "$comando" "Directorios de origen y destino son iguales" "ERR"
 	echo "[Mover] Error: los directorios de origen y destino son iguales"
 	exit 1
 fi
@@ -105,12 +107,20 @@ fi
 nombre="${archivo##*/}"        # nombre del archivo (sin el path)
 duplicados="$GRUPO/$DUPDIR"    # path del directorio de duplicados
 
+# si no existe el directorio para duplicados, lo crea
+if ! [ -d $duplicados ]
+then
+	mkdir $duplicados
+	./Glog.sh "$comando" "Fue creado el directorio $duplicados" "WAR"
+	echo "[Mover] Fue creado el directorio $duplicados"
+fi
+
 if [ -e "$destino/$nombre" ]
 then	
 	# obtiene el ultimo numero asignado a los archivos con igual nombre	
 	numero=$(ls -1 "$duplicados" | grep "^$nombre\.[0-9]*$" | sed 's/.*\.\([0-9]*\)$/\1/' | sort -g | tail -n 1)
 
-	# genera el siguiente numero
+	# genera el numero sucesivo
 	if [ -z $numero ]
 	then
 		numero=1
@@ -124,7 +134,7 @@ then
 	# mover el archivo numerado al directorio de duplicados
 	mv -f "$destino/$nombre" "$duplicados/$numerado"
 	
-	# escribir en el log del comando que llamo, y mostrar por pantalla
+	# escribir en el log y mostrar por pantalla
 	./Glog.sh "$comando" "Archivo $numerado movido al directorio $DUPDIR" "INFO"
 	echo "[Mover] Archivo $numerado movido al directorio $DUPDIR"
 fi
@@ -132,8 +142,8 @@ fi
 # mover el archivo al directorio destino
 mv -f "$archivo" "$destino/$nombre"
 
-# escribir en el log del comando que llamo, y mostrar por pantalla
-destino="${destino##*/}"
+# escribir en el log y mostrar por pantalla
+destino="${destino##*/}"  # nombre del directorio (sin el path)
 ./Glog.sh "$comando" "Archivo $nombre movido al directorio $destino" "INFO"
 echo "[Mover] Archivo $nombre movido al directorio $destino"
 
