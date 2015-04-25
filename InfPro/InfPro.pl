@@ -74,43 +74,71 @@ sub consultar{
 	}else{
 		print "Se eligió -c\n";
 		leerTodosArchivos();	
-		#leerarchivos();
 	}
 	 
 }
 
+#Para ordenar los archivos primero debo pasar el hash a una lista
+sub devolverArchivosOrdenados{
+	my %archivosResultantes = (
+	   nombre1 => 89,
+	   nombre2 => 20,
+	   nombre3 => 182,
+	);
+
+	foreach my $name (keys %archivosResultantes) {
+	    printf "%-8s %s\n", $name, $archivosResultantes{$name};
+	}
+}
+
 sub leerTodosArchivos{
+	my $palabraClave = "Romina";
 	my $ruta = $ENV{"NOVEDIR"};
 	opendir (DIR, $ruta) or die $!;
-
+	my %hashResultados;
 	while (my $file = readdir(DIR)) {
 		my $filename = $ruta.'/'.$file;
 		open(my $fh, '<:encoding(UTF-8)', $filename)
 		 or die "Could not open file '$filename' $!";
 		 
 		while (my $row = <$fh>) {
-		  chomp $row;
-		  print "$row\n";
-		#leerArchivo($file);
+			chomp $row;
+			my $causal = "";
+			my $extracto = "";		
+			my @data = split(";",$row);
+			$causal = $data[2];
+			$extracto = $data[3];
+			#leerArchivo($file);
+			if (defined $causal and index($causal, $palabraClave) != -1) {
+			    #Agrego al hash el puntaje del archivo - pasar a metodo
+				if( !exists($hashResultados{$file} ) ){
+					$hashResultados{$file} = 10;
+				}
+				else{
+					$hashResultados{$file} += 10;
+				}	
+			}
+
+			if (defined $extracto and index($extracto, $palabraClave) != -1) {
+			    #Agrego al hash el puntaje del archivo - pasar a metodo
+				if( !exists($hashResultados{$file} ) ){
+					$hashResultados{$file} = 1;
+				}
+				else{
+					$hashResultados{$file} += 1;
+				}		
+			}
+	
 		}
    	 }
-    	closedir(DIR);	
-}
 
-#TODO: Llamar a esta funcion 
-sub leerArchivo{
-	my $ruta = $ENV{"NOVEDIR"};
-	#my $file = _@;
-	my $filename = $ruta.'/';#.$file;
-	open(my $fh, '<:encoding(UTF-8)', $filename)
-	  or die "Could not open file '$filename' $!";
-	 
-	while (my $row = <$fh>) {
-	  chomp $row;
-	  print "$row\n";
+    	closedir(DIR);
+	foreach my $name (keys %hashResultados) {
+	    	printf "%-8s %s\n", $name, $hashResultados{$name};
 	}
-
+	
 }
+
 
 sub informar{
 	print "Se eligió -i\n";
