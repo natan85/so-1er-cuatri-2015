@@ -1,0 +1,5 @@
+Directorio de prueba para poner los archivos de configuración que van a leerse según lo estipulado en el TP.
+
+Equivalente a grupoxx/conf
+
+Usar mientras no se tengan los scripts que alimentan al folder /conf andando. Luego migrar a otro folder que sea /conf
