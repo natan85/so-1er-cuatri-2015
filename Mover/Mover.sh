@@ -16,9 +16,9 @@
 # *******************************************************************
 # *******************************************************************
 # Ejemplos de uso:
-# ./Mover.sh "../NOVEDIR/archivo1.txt" "../RECHDIR" "ProPro"
-# ./Mover.sh "../NOVEDIR/archivo2" "../ACEPDIR" "RecPro"
-# ./Mover.sh "../NOVEDIR/archivo3.sh" "../PROCDIR" "InsPro"
+# ./Mover.sh "../NOVEDIR/archivo1.txt" "../ACEPDIR" "RecPro"
+# ./Mover.sh "../NOVEDIR/archivo2" "../RECHDIR" "RecPro"
+# ./Mover.sh "../NOVEDIR/archivo3.sh" "../PROCDIR" "ProPro"
 # *******************************************************************
 # *******************************************************************
 
@@ -28,11 +28,11 @@
 # Definiciones
 # ***************************************************
 
-# ubicacion relativa esperada del archivo de configuracion
-CONFIG="../CONFDIR/InsPro.conf"
-
 # comando por default (si no hay tercer parametro)
 COMANDO="Mover"
+
+# ubicacion relativa esperada del archivo de configuracion
+CONFIG="../CONFDIR/InsPro.conf"
 
 # ***************************************************
 # Verificaciones
@@ -46,13 +46,16 @@ then
 fi
 
 # obtener valores de configuracion
-GRUPO=`grep '^GRUPO=' $CONFIG | sed 's/^GRUPO=\([^=]*\).*/\1/'`
-DUPDIR=`grep '^DUPDIR=' $CONFIG | sed 's/^DUPDIR=\([^=]*\).*/\1/'`
+GRUPO=`grep '^GRUPO=' $CONFIG | sed 's/^GRUPO=\([^=]*\).*/\1/' | sed 's/\/*$//'`
+DUPDIR=`grep '^DUPDIR=' $CONFIG | sed 's/^DUPDIR=\([^=]*\).*/\1/' | sed 's/\/*$//'`
+
+# eliminar el path de DUPDIR (si venia incluido)
+DUPDIR="${DUPDIR##*/}"  
 
 # verificar valores de configuracion obtenidos
 if [ -z $GRUPO ] || [ -z $DUPDIR ];
 then
-	echo "[Mover] Error en parametros de configuracion"
+	echo "[Mover] Error en valores de configuracion"
 	exit 1
 fi
 
@@ -93,13 +96,17 @@ then
 fi
 
 # verificar si el directorio de origen es igual al directorio de destino
-origen="${archivo%/*}"
+
+origen="${archivo%/*}"   # path del archivo (sin el nombre)
+
 if [ "$origen" == "$destino" ]
 then
 	./Glog.sh "$comando" "Directorios de origen y destino son iguales" "ERR"
 	echo "[Mover] Error: los directorios de origen y destino son iguales"
 	exit 1
 fi
+
+# ***************************************************
 
 # verificar si ya existe el archivo en el directorio destino,
 # y en caso de existir moverlo al directorio de duplicados
@@ -115,7 +122,8 @@ then
 	echo "[Mover] Fue creado el directorio $duplicados"
 fi
 
-if [ -e "$destino/$nombre" ]
+# verificar el archivo
+if [ -e $destino/$nombre ]
 then	
 	# obtiene el ultimo numero asignado a los archivos con igual nombre	
 	numero=$(ls -1 "$duplicados" | grep "^$nombre\.[0-9]*$" | sed 's/.*\.\([0-9]*\)$/\1/' | sort -g | tail -n 1)
@@ -129,22 +137,26 @@ then
 	fi
 
 	# nombre del nuevo archivo numerado
-	numerado="$nombre.$numero"
+	numerado=$nombre.$numero
 	
 	# mover el archivo numerado al directorio de duplicados
-	mv -f "$destino/$nombre" "$duplicados/$numerado"
+	mv -f $destino/$nombre $duplicados/$numerado
 	
 	# escribir en el log y mostrar por pantalla
-	./Glog.sh "$comando" "Archivo $numerado movido al directorio $DUPDIR" "INFO"
-	echo "[Mover] Archivo $numerado movido al directorio $DUPDIR"
+	./Glog.sh "$comando" "Archivo duplicado $numerado movido a $DUPDIR" "INFO"
+	echo "[Mover] Archivo duplicado $numerado movido a $DUPDIR"
 fi
 
-# mover el archivo al directorio destino
+# ***************************************************
+
+# mover el archivo
 mv -f "$archivo" "$destino/$nombre"
 
-# escribir en el log y mostrar por pantalla
+# escribir en el log
 destino="${destino##*/}"  # nombre del directorio (sin el path)
 ./Glog.sh "$comando" "Archivo $nombre movido al directorio $destino" "INFO"
+
+# mostrar por pantalla
 echo "[Mover] Archivo $nombre movido al directorio $destino"
 
 exit 0
