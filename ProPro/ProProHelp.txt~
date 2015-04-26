@@ -1,0 +1,13 @@
+Uso: ProPro DOC_PROTOC_ACEPT EMISORES GESTIONES CONTADORES_A_G NORMAS_EM
+Lee los archivos que se encuentran en el directorio ACEPDIR con información de documentos para protocolización, los procesa cronológicamente, les asigna el número de norma si no la tuvieran, y graba los documentos protocolizados en el subdirectorio de gestión que corresponda en un archivo diferente por cada año–norma
+
+Argumentos obligatorios.
+	DOC_PROTOC_ACEPT: Archivos con información de documentos para protocolización aceptados
+	EMISORES: 	  Maestro de Emisores autorizados
+	GESTIONES: 	  Maestro de gestiones
+	CONTADORES_A_G:   Tabla de contadores por año-gestión
+	NORMAS_EM: 	  Tabla de Normas por emisor
+
+Para documentación completa, referirse a enunciado.
+
+
