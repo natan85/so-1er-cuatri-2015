@@ -51,9 +51,12 @@ then
 fi
 
 # obtener valores de configuracion
-GRUPO=`grep '^GRUPO=' $CONFIG | sed 's/^GRUPO=\([^=]*\).*/\1/'`
-LOGDIR=`grep '^LOGDIR=' $CONFIG | sed 's/^LOGDIR=\([^=]*\).*/\1/'`
+GRUPO=`grep '^GRUPO=' $CONFIG | sed 's/^GRUPO=\([^=]*\).*/\1/' | sed 's/\/*$//'`
+LOGDIR=`grep '^LOGDIR=' $CONFIG | sed 's/^LOGDIR=\([^=]*\).*/\1/' | sed 's/\/*$//'`
 LOGSIZE=`grep '^LOGSIZE=' $CONFIG | sed 's/^LOGSIZE=\([^=]*\).*/\1/'`
+
+# eliminar el path de LOGDIR (si venia incluido)
+LOGDIR="${LOGDIR##*/}"  
 
 # verificar valores de configuracion obtenidos
 if [ -z $GRUPO ] || [ -z $LOGDIR ] || [ -z $LOGSIZE ];
@@ -62,14 +65,17 @@ then
 	exit 1
 fi
 
-# verificar cantidad de parametros recibidos
+# verificar parametros recibidos
 if [ $# -lt 2 ];
 then
 	echo "[Glog] Error en cantidad de parametros recibidos"
 	exit 1
 fi
 
-# verificar si hay codigo recibido
+comando=`echo $1 | sed 's/\(.*\)\..*/\1/'`
+mensaje=$2
+
+# verificar si hay codigo recibido, y si es correcto
 if [ $# -ge 3 ];
 then
 	if [ $3 != "INFO" ] && [ $3 != "WAR" ] && [ $3 != "ERR" ];
@@ -77,17 +83,17 @@ then
 		echo "[Glog] Error en codigo recibido"
 		exit 1
 	else
-		CODIGO=$3
+		codigo=$3
 	fi
 fi
 
 # directorio del archivo de log
-DIR=$GRUPO/$LOGDIR/$1
+DIR=$GRUPO/$LOGDIR/$comando
 
 # verificar existencia directorio de log, o crearlo
-if ! [ -d $DIR ]; 
+if [ ! -d $DIR ]; 
 then
-	mkdir $DIR
+	mkdir -p $DIR
 	echo "[Glog] Fue creado el directorio $DIR"
 fi
 
@@ -98,13 +104,9 @@ fi
 # datos a escribir
 fecha=`date +"%d-%m-%Y %H:%M:%S"`
 usuario=$USUARIO
-comando=$1
-codigo=$CODIGO
-mensaje=$2
 
-# donde escribir
-nombre="$1.log"
-archivo=$DIR/$nombre
+# archivo donde escribir
+archivo=$DIR/$comando".log"
 
 # escribir en el log
 echo "$fecha-$usuario-$comando-$codigo-$mensaje" >> "$archivo"
@@ -113,7 +115,7 @@ echo "$fecha-$usuario-$comando-$codigo-$mensaje" >> "$archivo"
 # Recortar archivo de log si es necesario
 # ***************************************************
 
-# obtener tamanio archivo
+# obtener tamanio del archivo
 tamanio=$(stat -c %s "$archivo")
 
 # recortar archivo si excedio el tamanio maximo
