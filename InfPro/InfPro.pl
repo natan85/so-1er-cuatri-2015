@@ -16,7 +16,7 @@ unless (flock($script_fh, LOCK_EX|LOCK_NB)) {
 
 ###### Se valida ejecucion de IniPro######
 # Si no existen las variables de ambiente sabemos que IniPro no se ejecuto
-if (!exists($ENV{"MAEDIR"}) && !exists($ENV{"PROCDIR"}) && !exists($ENV{"INFODIR"}) ) 
+if (!exists($ENV{"MAEDIR"}) && !exists($ENV{"PROCDIR"}) && !exists($ENV{"INFODIR"}) && !exists($ENV{"NOVEDIR"}))
 {
 	 print "Previamente debe ejecutar el comando IniPro\n";
      exit(1);	  
@@ -39,7 +39,7 @@ if ($num_parametros < 1) {
 	elsif($primero eq "-i") { informar(); }
 	elsif($primero eq "-e") { estadisticas();}
 	else { 
-			print "Opción incorrecta.\n";
+		print "Opción incorrecta.\n";
     		mostrarAyuda();
     		exit;
     	}
@@ -68,12 +68,16 @@ sub grabar{
 }
 
 sub consultar{
-	my $num_par = $#ARGV + 1;
+	my $num_parametros = $#ARGV + 1;
 	if($num_parametros == 1){
 		print "Debe ingresar al menos una palabra clave\n";
 	}else{
-		print "Se eligió -c\n";
-		leerTodosArchivos();	
+		if($num_parametros < 4 ){
+			print "Debe utilizar al menos un filtro\n";	
+		}else{
+			print "Se eligió -c\n";
+			leerTodosArchivos();
+		}
 	}
 	 
 }
@@ -92,45 +96,89 @@ sub devolverArchivosOrdenados{
 }
 
 sub leerTodosArchivos{
-	my $palabraClave = "Romina";
+	#my $palabraClave = shift;
+	my %filtros = ('-ft' => " ", '-fa' => " ", '-fn' => " ", '-fg' => " ", '-fe' => " ");
+	my $palabraClave = $ARGV[1];	
 	my $ruta = $ENV{"NOVEDIR"};
 	opendir (DIR, $ruta) or die $!;
 	my %hashResultados;
+	#Leo cada archivo
 	while (my $file = readdir(DIR)) {
 		my $filename = $ruta.'/'.$file;
 		open(my $fh, '<:encoding(UTF-8)', $filename)
 		 or die "Could not open file '$filename' $!";
-		 
+		#Leo cada linea 
 		while (my $row = <$fh>) {
 			chomp $row;
-			my $causal = "";
-			my $extracto = "";		
+			#Inicializo variables de filtrado
+			my $cumplioCausal = 0;
+			my $cumplioExtracto = 0;
+			my $cumplioFiltroTipoNorma = 1;
+			my $cumplioFiltroAnio = 1;
+			my $cumplioFiltroNumeroNorma = 1;
+			my $cumplioFiltroGestion = 1;
+			my $cumplioFiltroEmisor = 1;
+			my $cumplioGuardar = 0;
+
+			#Busco los valores de causal y extracto		
 			my @data = split(";",$row);
-			$causal = $data[2];
-			$extracto = $data[3];
+			my $causal = $data[2];
+			my $extracto = $data[3];
 			#leerArchivo($file);
 			if (defined $causal and index($causal, $palabraClave) != -1) {
-			    #Agrego al hash el puntaje del archivo - pasar a metodo
-				if( !exists($hashResultados{$file} ) ){
-					$hashResultados{$file} = 10;
-				}
-				else{
-					$hashResultados{$file} += 10;
+			   print "En causal\n";	
+			   $cumplioCausal = 1; 
+			}
+			if(defined $extracto and index($extracto, $palabraClave) != -1){
+			   print "En extracto\n";
+			   $cumplioExtracto = 1;	
+			}
+			#Cargamos los filtros
+			my $i = 2;
+			while($i < $#ARGV){
+				my $parametro = $ARGV[$i]; 
+				if(!exists($filtros{$parametro} ) ){
+					$i += 1;					
+				}else{
+					my $valorFiltro = $ARGV[$i+1]; 					
+					$filtros{$parametro} = $valorFiltro;
+					$i += 2;
 				}	
 			}
-
-			if (defined $extracto and index($extracto, $palabraClave) != -1) {
-			    #Agrego al hash el puntaje del archivo - pasar a metodo
-				if( !exists($hashResultados{$file} ) ){
-					$hashResultados{$file} = 1;
+			foreach my $name (keys %filtros) {
+			    	printf "%-8s %s\n", $name, $filtros{$name};
+			}
+			#Validamos si se ingreso guardar
+			if($i <= $#ARGV){
+				my $ultimaEntrada = $ARGV[$#ARGV];
+				if(defined $ultimaEntrada and $ultimaEntrada eq "-g"){
+					$cumplioGuardar = 1;	
+					print "cumplioGuardar\n";
 				}
-				else{
-					$hashResultados{$file} += 1;
-				}		
+			}
+			
+			if (($cumplioCausal == 1 or $cumplioExtracto == 1) and $cumplioFiltroTipoNorma == 1 and $cumplioFiltroAnio == 1 and $cumplioFiltroNumeroNorma == 1 and $cumplioFiltroGestion == 1 and $cumplioFiltroEmisor == 1){
+				#Agrego al hash el puntaje del archivo - pasar a metodo
+				if($cumplioCausal == 1){
+					if(!exists($hashResultados{$file} ) ){
+						$hashResultados{$file} = 10;					
+					}else{
+						$hashResultados{$file} += 10;
+					}
+				}
+				if ($cumplioExtracto == 1) {
+				    	#Agrego al hash el puntaje del archivo - pasar a metodo
+					if( !exists($hashResultados{$file} ) ){
+						$hashResultados{$file} = 1;
+					}
+					else{
+						$hashResultados{$file} += 1;
+					}		
+				}	
 			}
 	
-		}
-   	 }
+		}#Del while lineas
+   	 }#Del while archivos
 
     	closedir(DIR);
 	foreach my $name (keys %hashResultados) {
@@ -138,7 +186,6 @@ sub leerTodosArchivos{
 	}
 	
 }
-
 
 sub informar{
 	print "Se eligió -i\n";
