@@ -98,15 +98,40 @@ sub devolverArchivosOrdenados{
 sub leerTodosArchivos{
 	#my $palabraClave = shift;
 	my %filtros = ('-ft' => " ", '-fa' => " ", '-fn' => " ", '-fg' => " ", '-fe' => " ");
+	my $pidioGuardar = 0;
 	my $palabraClave = $ARGV[1];	
 	my $ruta = $ENV{"NOVEDIR"};
 	opendir (DIR, $ruta) or die $!;
 	my %hashResultados;
+	#Cargamos los filtros
+	my $i = 2;
+	while($i < $#ARGV){
+		my $parametro = $ARGV[$i]; 
+		if(!exists($filtros{$parametro} ) ){
+			$i += 1;					
+		}else{
+			my $valorFiltro = $ARGV[$i+1]; 					
+			$filtros{$parametro} = $valorFiltro;
+			$i += 2;
+		}	
+	}
+	foreach my $name (keys %filtros) {
+	    	printf "%-8s %s\n", $name, $filtros{$name};
+	}
+	#Validamos si se ingreso guardar
+	if($i <= $#ARGV){
+		my $ultimaEntrada = $ARGV[$#ARGV];
+		if(defined $ultimaEntrada and $ultimaEntrada eq "-g"){
+			$pidioGuardar = 1;	
+			print "se pidio Guardar\n";
+		}
+	}
 	#Leo cada archivo
 	while (my $file = readdir(DIR)) {
 		my $filename = $ruta.'/'.$file;
 		open(my $fh, '<:encoding(UTF-8)', $filename)
 		 or die "Could not open file '$filename' $!";
+
 		#Leo cada linea 
 		while (my $row = <$fh>) {
 			chomp $row;
@@ -118,7 +143,6 @@ sub leerTodosArchivos{
 			my $cumplioFiltroNumeroNorma = 1;
 			my $cumplioFiltroGestion = 1;
 			my $cumplioFiltroEmisor = 1;
-			my $cumplioGuardar = 0;
 
 			#Busco los valores de causal y extracto		
 			my @data = split(";",$row);
@@ -126,35 +150,10 @@ sub leerTodosArchivos{
 			my $extracto = $data[3];
 			#leerArchivo($file);
 			if (defined $causal and index($causal, $palabraClave) != -1) {
-			   print "En causal\n";	
 			   $cumplioCausal = 1; 
 			}
 			if(defined $extracto and index($extracto, $palabraClave) != -1){
-			   print "En extracto\n";
 			   $cumplioExtracto = 1;	
-			}
-			#Cargamos los filtros
-			my $i = 2;
-			while($i < $#ARGV){
-				my $parametro = $ARGV[$i]; 
-				if(!exists($filtros{$parametro} ) ){
-					$i += 1;					
-				}else{
-					my $valorFiltro = $ARGV[$i+1]; 					
-					$filtros{$parametro} = $valorFiltro;
-					$i += 2;
-				}	
-			}
-			foreach my $name (keys %filtros) {
-			    	printf "%-8s %s\n", $name, $filtros{$name};
-			}
-			#Validamos si se ingreso guardar
-			if($i <= $#ARGV){
-				my $ultimaEntrada = $ARGV[$#ARGV];
-				if(defined $ultimaEntrada and $ultimaEntrada eq "-g"){
-					$cumplioGuardar = 1;	
-					print "cumplioGuardar\n";
-				}
 			}
 			
 			if (($cumplioCausal == 1 or $cumplioExtracto == 1) and $cumplioFiltroTipoNorma == 1 and $cumplioFiltroAnio == 1 and $cumplioFiltroNumeroNorma == 1 and $cumplioFiltroGestion == 1 and $cumplioFiltroEmisor == 1){
