@@ -16,9 +16,8 @@
 # *******************************************************************
 # *******************************************************************
 # Ejemplos de uso:
-# ./Mover.sh "../NOVEDIR/archivo1.txt" "../ACEPDIR" "RecPro"
-# ./Mover.sh "../NOVEDIR/archivo2" "../RECHDIR" "RecPro"
-# ./Mover.sh "../NOVEDIR/archivo3.sh" "../PROCDIR" "ProPro"
+# ./Mover.sh "$archivo" "$rechdir" "ProPro"
+# ./Mover.sh "$archivo" "$acepdir" "ProPro"
 # *******************************************************************
 # *******************************************************************
 
@@ -31,33 +30,19 @@
 # comando por default (si no hay tercer parametro)
 COMANDO="Mover"
 
-# ubicacion relativa esperada del archivo de configuracion
-CONFIG="../CONFDIR/InsPro.conf"
-
 # ***************************************************
 # Verificaciones
 # ***************************************************
 
-# verificar existencia archivo configuracion
-if ! [ -e $CONFIG ]; 
+# verificar variables de ambiente
+if [ ! -n "${GRUPO+1}" ] || [ ! -n "${DUPDIR+1}" ]
 then
-	echo "[Glog] Error: el archivo de configuracion no existe"
+	echo "[Mover] Error en variables de ambiente"
 	exit 1
 fi
-
-# obtener valores de configuracion
-GRUPO=`grep '^GRUPO=' $CONFIG | sed 's/^GRUPO=\([^=]*\).*/\1/' | sed 's/\/*$//'`
-DUPDIR=`grep '^DUPDIR=' $CONFIG | sed 's/^DUPDIR=\([^=]*\).*/\1/' | sed 's/\/*$//'`
 
 # eliminar el path de DUPDIR (si venia incluido)
-DUPDIR="${DUPDIR##*/}"  
-
-# verificar valores de configuracion obtenidos
-if [ -z $GRUPO ] || [ -z $DUPDIR ];
-then
-	echo "[Mover] Error en valores de configuracion"
-	exit 1
-fi
+DUPDIR="${DUPDIR##*/}" 
 
 # verificar la cantidad de parametros recibidos
 if [ $# -lt 2 ]
