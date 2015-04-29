@@ -25,42 +25,36 @@ function validarInicio {
 	# Checkeo de archivos y tablas disponibles
 	if [ ! -d "$grupo" ]
 	then
-		#Loggear cuando se tenga GLog	
 		echo "No se encuentra el directorio $grupo"
 		exit 2
 	fi
 
 	if [ ! -d "$acepdir" ]
 	then
-		#Loggear cuando se tenga GLog	
 		echo "No se encuentra el directorio $acepdir"
 		exit 2
 	fi
 
 	if [ ! -d "$maedir" ]
 	then
-		#Loggear cuando se tenga GLog	
 		echo "No se encuentra el directorio $maedir"
 		exit 2
 	fi
 
 	if [ ! -d "$procdir" ]
 	then
-		#Loggear cuando se tenga GLog	
 		echo "No se encuentra el directorio $procdir"
 		exit 2
 	fi
 
 	if [ ! -d "$rechdir" ]
 	then
-		#Loggear cuando se tenga GLog	
 		echo "No se encuentra el directorio $rechdir"
 		exit 2
 	fi
 
 	if [ ! -d "$logdir" ]
 	then
-		#Loggear cuando se tenga GLog	
 		echo "No se encuentra el directorio $logdir"
 		exit 2
 	fi
@@ -68,13 +62,11 @@ function validarInicio {
 	# Verifica existencia de los archivos maestros y tablas, y permisos de lectura
 	if [ ! -f "$maedir/emisores.mae" ]
 	then
-		#Loggear cuando se tenga GLog	
 		echo "No se encuentra el archivo $maedir/emisores.mae"
 		exit 2
 	else
 		if [ ! -r "$maedir/emisores.mae" ]
-		then
-			#Loggear cuando se tenga GLog	
+		then	
 			echo "No se tienen permisos para leer $maedir/emisores.mae"
 			exit 2
 		fi
@@ -82,13 +74,11 @@ function validarInicio {
 
 	if [ ! -f "$maedir/gestiones.mae" ]
 	then
-		#Loggear cuando se tenga GLog	
 		echo "No se encuentra el archivo $maedir/gestiones.mae"
 		exit 2
 	else
 		if [ ! -r "$maedir/gestiones.mae" ]
-		then
-			#Loggear cuando se tenga GLog	
+		then	
 			echo "No se tienen permisos para leer $maedir/gestiones.mae"
 			exit 2
 		fi
@@ -96,13 +86,11 @@ function validarInicio {
 
 	if [ ! -f "$maedir/tab/axg.tab" ]
 	then
-		#Loggear cuando se tenga GLog	
 		echo "No se encuentra el archivo $maedir/tab/axg.tab"
 		exit 2
 	else
 		if [ ! -r "$maedir/tab/axg.tab" ]
 		then
-			#Loggear cuando se tenga GLog	
 			echo "No se tienen permisos para leer $maedir/tab/axg.tab"
 			exit 2
 		fi
@@ -110,13 +98,11 @@ function validarInicio {
 
 	if [ ! -f "$maedir/tab/nxe.tab" ]
 	then
-		#Loggear cuando se tenga GLog	
 		echo "No se encuentra el archivo $maedir/tab/nxe.tab"
 		exit 2
 	else
 		if [ ! -r "$maedir/tab/nxe.tab" ]
 		then
-			#Loggear cuando se tenga GLog	
 			echo "No se tienen permisos para leer $maedir/tab/nxe.tab"
 			exit 2
 		fi
@@ -124,7 +110,6 @@ function validarInicio {
 
 	if [ ! -n "$(ls $acepdir)" ]
 	then
-			#Loggear cuando se tenga GLog	
 			echo "No hay archivos para protocolizar en $acepdir"
 			exit 3
 	fi	
@@ -148,7 +133,7 @@ function validarArchivo {
 	if [ -a "$procdir/proc/$filename" ]; then
 		cantRechazados=$((cantRechazados + 1))
 		#Loggear cuando se tenga GLog
-		echo "Se rechaza el archivo por estar DUPLICADO."
+		$Glog "$nomCom" "Se rechaza el archivo por estar DUPLICADO." "ERROR"
 
 		#Mover con MOVER cuando se tenga
 		#mv $archivo $rechdir/$filename
@@ -162,7 +147,7 @@ function validarArchivo {
 	if [ ! -n "$findnxe" ]; then
 		cantRechazados=$((cantRechazados + 1))
 		#Loggear cuando se tenga GLog
-		echo "Se rechaza el archivo. Emisor no habilitado en este tipo de norma"
+		$Glog "$nomCom" "Se rechaza el archivo. Emisor no habilitado en este tipo de norma" "ERROR"
 
 		#Mover con MOVER cuando se tenga
 		#mv $archivo $rechdir/$filename
@@ -243,13 +228,13 @@ function calcularNormaCorriente {
 	else
 		contnorma=1
 		maxContadorAxG
-		# Falta usuario?
-		usuario="?"
+
+		usuario="$USER"
 		fechaParaNuevoReg=$(date +"%d/%m/%Y")
 		nuevoreg="$contid;$buscreg;$contnorma;$usuario;$fechaParaNuevoReg"
 		echo "$nuevoreg" >> $maedir/tab/axg.tab
 		# Falta loggear con Glog
-		echo "Se actualizó la tabla de contadores"
+		$Glog "$nomCom" "Se actualizó la tabla de contadores" "INFO"
 	fi	
 	
 }
@@ -330,18 +315,20 @@ function validacionCorrientes {
 }
 
 function procesarArchivos {
-
+	nomCom="ProPro"
+	Glog=$grupo/Glog/Glog.sh
 	cantArchivos=$(printf '%s\n' "${archivos[@]}" | wc -l)
 	cantAceptados=0
 	cantRechazados=0
-	echo -e "Inicio de ProPro\n"
-	echo "Cantidad de archivos a procesar: $cantArchivos"
+	$Glog "$nomCom" "Inicio de ProPro" "INFO"
+	
+	$Glog "$nomCom" "Cantidad de archivos a procesar: $cantArchivos" "INFO"
 
 	for archivo in ${archivos[@]}
 	do
 		
 		filename=$(basename "$archivo")
-		echo -e "Archivo a procesar: $filename"
+		$Glog "$nomCom" "Archivo a procesar: $filename" "INFO"
 		validarArchivo
 
 		while read -r registro
@@ -362,9 +349,9 @@ function procesarArchivos {
 		mv $archivo $procdir/proc/$filename
 	done
 	# Falta loggear usando Glog
-	echo "Cantidad de archivos procesados: $cantAceptados"
-	echo "Cantidad de archivos rechazados: $cantRechazados"
-	echo "Fin de ProPro"
+	$Glog "$nomCom" "Cantidad de archivos procesados: $cantAceptados" "INFO"
+	$Glog "$nomCom" "Cantidad de archivos rechazados: $cantRechazados" "INFO"
+	$Glog "$nomCom" "Fin de ProPro" "INFO"
 }
 
 validarInicio
