@@ -28,7 +28,7 @@
 # *******************************************************************
 
 # usuario del sistema en FIUBA
-USUARIO="alumnos"
+USUARIO="$USER"
 
 # cantidad de lineas a conservar al recortar logs
 LINEAS=10
@@ -36,34 +36,19 @@ LINEAS=10
 # codigo por default (cuando no se recibe codigo)
 CODIGO="INFO"
 
-# ubicacion relativa esperada del archivo de configuracion
-CONFIG="../CONFDIR/InsPro.conf"
-
 # *******************************************************************
 # Verificaciones
 # *******************************************************************
 
-# verificar existencia archivo configuracion
-if ! [ -e $CONFIG ]; 
+# verificar variables de ambiente
+if [ ! -n "${GRUPO+1}" ] || [ ! -n "${LOGDIR+1}" ] || [ ! -n "${LOGSIZE+1}" ];
 then
-	echo "[Glog] Error: el archivo de configuracion no existe"
+	echo "[Glog] Error en variables de ambiente"
 	exit 1
 fi
-
-# obtener valores de configuracion
-GRUPO=`grep '^GRUPO=' $CONFIG | sed 's/^GRUPO=\([^=]*\).*/\1/' | sed 's/\/*$//'`
-LOGDIR=`grep '^LOGDIR=' $CONFIG | sed 's/^LOGDIR=\([^=]*\).*/\1/' | sed 's/\/*$//'`
-LOGSIZE=`grep '^LOGSIZE=' $CONFIG | sed 's/^LOGSIZE=\([^=]*\).*/\1/'`
 
 # eliminar el path de LOGDIR (si venia incluido)
-LOGDIR="${LOGDIR##*/}"  
-
-# verificar valores de configuracion obtenidos
-if [ -z $GRUPO ] || [ -z $LOGDIR ] || [ -z $LOGSIZE ];
-then
-	echo "[Glog] Error en valores de configuracion"
-	exit 1
-fi
+LOGDIR="${LOGDIR##*/}"
 
 # verificar parametros recibidos
 if [ $# -lt 2 ];
@@ -80,8 +65,7 @@ if [ $# -ge 3 ];
 then
 	if [ $3 != "INFO" ] && [ $3 != "WAR" ] && [ $3 != "ERR" ];
 	then
-		echo "[Glog] Error en codigo recibido"
-		exit 1
+		echo "[Glog] Error en codigo recibido, se reemplaza por INFO"
 	else
 		codigo=$3
 	fi
