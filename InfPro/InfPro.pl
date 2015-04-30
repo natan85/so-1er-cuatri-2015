@@ -4,8 +4,9 @@ use warnings;
 use Fcntl qw(:flock);
 use feature qw/switch/; 
 our %filtros = ('-ft' => " ", '-fa' => " ", '-fn' => " ", '-fg' => " ", '-fe' => " ");
-our @a_resultados;
-our %h_contenido_resultados;
+#our @a_resultados;
+our %contenido_resultados_consola;
+our %contenido_resultados_archivo;
 ###### Se valida que el comando no este en ejecución#####
 open(my $script_fh, '<', $0)
    or die("No se pudo abrir el archivo: $!\n");
@@ -57,22 +58,6 @@ sub mostrarAyuda {
 		  -e                  Estadísticas\n";
 }
 
-sub grabar{
-	print "Se eligió -g\n"; 
-	my $ruta = $ENV{"INFODIR"};
-	my $epoc = time();
-	#ARMO CONTENIDO
-	my $s1 = 'Search'."\n";
-	my $s2 = 'Tools'."\n";
-	#my $s3 = "$s1$s2";
-	my $str = "$s1$s2\n";
-	# $s3 contains 'PerlMonks'
-	#my $str = "Dato de prueba.";
-	my $nombreArchivo = $ruta."/resultado_".$epoc;
-	open FILE, ">".$nombreArchivo or die $!; 
-	print FILE $str; 
-	close FILE;
-}
 
 sub consultar{
 	my $num_parametros = $#ARGV + 1;
@@ -85,22 +70,8 @@ sub consultar{
 	}
 }
 
-#Para ordenar los archivos primero debo pasar el hash a una lista
-sub devolverArchivosOrdenados{
-	my %archivosResultantes = (
-	   nombre1 => 89,
-	   nombre2 => 20,
-	   nombre3 => 182,
-	);
-
-	foreach my $name (keys %archivosResultantes) {
-	    printf "%-8s %s\n", $name, $archivosResultantes{$name};
-	}
-}
-
 sub leerTodosArchivos{
 	#my $palabraClave = shift;
-	#my %filtros = ('-ft' => " ", '-fa' => " ", '-fn' => " ", '-fg' => " ", '-fe' => " ");
 	my $pidioGuardar = 0;
 	my $palabraClave = $ARGV[1];
 	my $ruta = $ENV{"PROCDIR"};
@@ -161,7 +132,6 @@ sub leerTodosArchivos{
 			#Busco por filtro Tipo Norma
 			my $tipoNorma = $data[12];
 			my $normaIngresada = $filtros{'-ft'};
-			#printf "%-8s %s\n", $tipoNorma, $normaIngresada;
 			
 			if ($normaIngresada eq " "){
 			   $cumplioFiltroTipoNorma = 1;	
@@ -214,25 +184,53 @@ sub leerTodosArchivos{
 			}
 
 			if (($cumplioCausal == 1 or $cumplioExtracto == 1) and $cumplioFiltroTipoNorma == 1 and $cumplioFiltroAnio == 1 and $cumplioFiltroNumeroNorma == 1 and $cumplioFiltroGestion == 1 and $cumplioFiltroEmisor == 1){
-				#Armamos la salida
+				#Armamos la salida por consola
 				my $fechaNorma = $data[1];		
 				my $peso = obtenerPeso($causal, $extracto, $palabraClave);
-				my $renglon1 = $emisor." ".$numero."/".$anio." ".$gestion." ".$fechaNorma." ".$peso."\n";
+				my $renglon1 = $tipoNorma." ".$emisor." ".$numero."/".$anio." ".$gestion." ".$fechaNorma." ".$peso."\n";
 				my $renglon2 = $extracto."\n";
 				my $renglon3 = $causal."\n";
-				print "$renglon1$renglon2$renglon3\n"
+				#Cargamos en la lista para luego ordenar
+				my $idReg = $data[10];
+				$contenido_resultados_consola{$peso."-".$file.$idReg} = $renglon1.$renglon2.$renglon3;
+				my $lineaSalida = $tipoNorma." ".$emisor." ".$numero." ".$anio." ".$gestion." ".$fechaNorma." ".$causal." ".$extracto." ".$idReg."\n";
+				$contenido_resultados_archivo{$peso."-".$file.$idReg} = $lineaSalida;
 				
 			}
 	
 		}#Del while lineas
    	 }#Del while archivos
+	
+	imprimirYGrabarResultadosOrdenados($pidioGuardar);
 
     	closedir(DIR);
-	foreach my $name (keys %hashResultados) {
-	    	printf "%-8s %s\n", $name, $hashResultados{$name};
-	}
-	
 }
+
+sub imprimirYGrabarResultadosOrdenados(){
+	my $pidioGuardar = $_[0];
+	my $resultadoArchivo;		    
+	foreach my $keyHash (sort{$b <=> $a} keys %contenido_resultados_consola) {
+		my $resultado = $contenido_resultados_consola{$keyHash};
+	    	print "$resultado\n";
+		if ($pidioGuardar == 1){
+			$resultadoArchivo .= $contenido_resultados_archivo{$keyHash};	
+		}
+	    }
+	grabar($resultadoArchivo);	
+}
+
+
+sub grabar{
+	my $resultado = $_[0];
+	my $ruta = $ENV{"INFODIR"};
+	my $epoc = time();
+	my $nombreArchivo = $ruta."/resultado_".$epoc;
+	open FILE, ">".$nombreArchivo or die $!; 
+	print FILE $resultado; 
+	close FILE;
+	print "Se generó el archivo $nombreArchivo\n";
+}
+
 
 sub obtenerPeso(){
 	my $causal = $_[0];
