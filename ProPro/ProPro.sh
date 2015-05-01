@@ -336,7 +336,7 @@ function procesarArchivos {
 			cargarDatosRegistro
 			parsearFechasGestionRegistro
 			validacionFechasRegistro
-			if [ $(echo "$gestion" | cut -d';' -f 5) -eq 0 ] || [ "${fechaRegDate:0:4}" != "${fechaActual:0:4}" ]
+			if [ $(echo "$gestion" | cut -d';' -f 5) -eq 0 ] || [ "${fechaRegDate:0:4}" -ne "${fechaActual:0:4}" ]
 			then
 				validacionHistoricos
 				
