@@ -39,18 +39,54 @@ function validarInicio {
 	then
 		echo "No se encuentra el directorio $maedir"
 		exit 2
+	else
+		if [ ! -d "$maedir/tab" ]
+		then
+			echo "No se encuentra el directorio $maedir/tab"
+			exit 2
+		else
+			if [ ! -w "$maedir/tab" ]
+			then
+				echo "No se tienen permisos para escribir sobre $maedir/tab"
+				exit 2
+			fi
+		fi
 	fi
 
 	if [ ! -d "$procdir" ]
 	then
 		echo "No se encuentra el directorio $procdir"
 		exit 2
+	else
+		if [ ! -w "$procdir" ]
+		then	
+			echo "No se tienen permisos para escribir sobre $procdir"
+			exit 2
+		fi
+	fi
+
+	if [ ! -d "$procdir/proc" ]
+	then
+		echo "No se encuentra el directorio $procdir/proc"
+		exit 2
+	else
+		if [ ! -w "$procdir/proc" ]
+		then	
+			echo "No se tienen permisos para escribir sobre $procdir/proc"
+			exit 2
+		fi
 	fi
 
 	if [ ! -d "$rechdir" ]
 	then
 		echo "No se encuentra el directorio $rechdir"
 		exit 2
+	else
+		if [ ! -w "$rechdir" ]
+		then	
+			echo "No se tienen permisos para escribir sobre $rechdir"
+			exit 2
+		fi
 	fi
 
 	if [ ! -d "$logdir" ]
@@ -110,8 +146,8 @@ function validarInicio {
 
 	if [ ! -n "$(ls $acepdir)" ]
 	then
-			echo "No hay archivos para protocolizar en $acepdir"
-			exit 3
+		echo "No hay archivos para protocolizar en $acepdir"
+		exit 3
 	fi	
 }
 
@@ -336,7 +372,7 @@ function procesarArchivos {
 			cargarDatosRegistro
 			parsearFechasGestionRegistro
 			validacionFechasRegistro
-			if [ $(echo "$gestion" | cut -d';' -f 5) -eq 0 ] || [ "${fechaRegDate:0:4}" != "${fechaActual:0:4}" ]
+			if [ $(echo "$gestion" | cut -d';' -f 5) -eq 0 ] || [ "${fechaRegDate:0:4}" -ne "${fechaActual:0:4}" ]
 			then
 				validacionHistoricos
 				

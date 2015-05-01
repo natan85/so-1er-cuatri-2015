@@ -3,8 +3,9 @@ use strict;
 use warnings;
 use Fcntl qw(:flock);
 use feature qw/switch/; 
-our %filtros = ('-ft' => " ", '-fa' => " ", '-fn' => " ", '-fg' => " ", '-fe' => " ");
-#our @a_resultados;
+our %filtros;
+our @filtrosValidos = ('-ft','-fa','-fn','-fg','-fe');
+our $pidioGuardar = 0;
 our %contenido_resultados_consola;
 our %contenido_resultados_archivo;
 ###### Se valida que el comando no este en ejecución#####
@@ -34,10 +35,8 @@ if ($num_parametros < 1) {
     exit;
 }else{
 	my $primero=$ARGV[0];
-
 	if($primero eq "-a") { mostrarAyuda(); }
 	elsif($primero eq "-c") { consultar();}
-	elsif($primero eq "-g") { grabar();}
 	elsif($primero eq "-i") { informar(); }
 	elsif($primero eq "-e") { estadisticas();}
 	else { 
@@ -60,46 +59,26 @@ sub mostrarAyuda {
 
 
 sub consultar{
-	my $num_parametros = $#ARGV + 1;
-	
-	if($num_parametros < 4 ){
+	cargarFiltrosYValidarGuardar();
+	my $cantFiltros = keys %filtros;
+	#print "$cantFiltros \n";
+	if($cantFiltros < 1 ){
 		print "Debe utilizar al menos un filtro\n";	
 	}else{
-		print "Se eligió -c\n";
 		leerTodosArchivos();
 	}
 }
 
 sub leerTodosArchivos{
 	#my $palabraClave = shift;
-	my $pidioGuardar = 0;
 	my $palabraClave = $ARGV[1];
+	my $sinPalabraClave = 0;
+	if($palabraClave eq "-ft" or $palabraClave eq "-fa" or $palabraClave eq "-fn" or $palabraClave eq "-fg" or $palabraClave eq "-fe")	{
+		$sinPalabraClave = 1;		
+	}
 	my $ruta = $ENV{"PROCDIR"};
 	opendir (DIR, $ruta) or die $!;
-	my %hashResultados;
-	#Cargamos los filtros
-	my $i = 2;
-	while($i < $#ARGV){
-		my $parametro = $ARGV[$i]; 
-		if(!exists($filtros{$parametro} ) ){
-			$i += 1;					
-		}else{
-			my $valorFiltro = $ARGV[$i+1]; 					
-			$filtros{$parametro} = $valorFiltro;
-			$i += 2;
-		}	
-	}
-	foreach my $name (keys %filtros) {
-	    	printf "%-8s %s\n", $name, $filtros{$name};
-	}
-	#Validamos si se ingreso guardar
-	if($i <= $#ARGV){
-		my $ultimaEntrada = $ARGV[$#ARGV];
-		if(defined $ultimaEntrada and $ultimaEntrada eq "-g"){
-			$pidioGuardar = 1;	
-			print "se pidio Guardar\n";
-		}
-	}
+	
 	#Leo cada archivo
 	while (my $file = readdir(DIR)) {
 		my $filename = $ruta.'/'.$file;
@@ -123,63 +102,78 @@ sub leerTodosArchivos{
 			my $causal = $data[4];
 			my $extracto = $data[5];
 			#leerArchivo($file);
-			if (defined $causal and index($causal, $palabraClave) != -1) {
-			   $cumplioCausal = 1; 
-			}
-			if(defined $extracto and index($extracto, $palabraClave) != -1){
-			   $cumplioExtracto = 1;	
-			}
+			if ($sinPalabraClave == 1){
+				$cumplioCausal = 1;
+				$cumplioExtracto = 1;
+			}else{
+				if (defined $causal and index($causal, $palabraClave) != -1) {
+				   $cumplioCausal = 1; 
+				}
+				if(defined $extracto and index($extracto, $palabraClave) != -1){
+				   $cumplioExtracto = 1;	
+				}
+
+			}			
+
 			#Busco por filtro Tipo Norma
 			my $tipoNorma = $data[12];
-			my $normaIngresada = $filtros{'-ft'};
-			
-			if ($normaIngresada eq " "){
-			   $cumplioFiltroTipoNorma = 1;	
+			my $normaIngresada;
+			if(exists($filtros{'-ft'}) ){
+				$normaIngresada = $filtros{'-ft'}; 
+			}else{
+				$cumplioFiltroTipoNorma = 1;	
 			}
-			if (defined $tipoNorma and ($normaIngresada ne " ") and index($tipoNorma, $normaIngresada) != -1) {
+			
+			if (defined $tipoNorma and defined $normaIngresada  and index($tipoNorma, $normaIngresada) != -1) {
 			   $cumplioFiltroTipoNorma = 1; 
 			}
 
 			#Busco por filtro Año
 			my $anio = $data[3];
-			my $anioIngresado = $filtros{'-fa'};
-			
-			if ($anioIngresado eq " "){
-			   $cumplioFiltroAnio = 1;	
+			my $anioIngresado; 
+			if(exists($filtros{'-fa'}) ){
+				$anioIngresado = $filtros{'-fa'}; 
+			}else{
+				$cumplioFiltroAnio = 1;
 			}
-			if (defined $anio and ($anioIngresado ne " ") and index($anio, $anioIngresado) != -1) {
+
+			if (defined $anio and defined $anioIngresado  and index($anio, $anioIngresado) != -1) {
 			   $cumplioFiltroAnio = 1; 
 			}
 			#Busco por filtro numero Norma
 			my $numero = $data[2];
-			my $numeroIngresado = $filtros{'-fn'};
-				
-			if ($numeroIngresado eq " "){
-			   $cumplioFiltroNumeroNorma = 1;	
+			my $numeroIngresado;
+			if(exists($filtros{'-fn'}) ){
+				$numeroIngresado = $filtros{'-fn'}; 
+			}else{
+				$cumplioFiltroNumeroNorma = 1;	
 			}
-			if (defined $numero and ($numeroIngresado ne " ") and index($numero, $numeroIngresado) != -1) {
+				
+			if (defined $numero and defined $numeroIngresado and index($numero, $numeroIngresado) != -1) {
 			   $cumplioFiltroNumeroNorma = 1; 
 			}
 			#Busco por filtro Gestion
 			my $gestion = $data[11];
-			my $gestionIngresada = $filtros{'-fg'};
-			
-			if ($gestionIngresada eq " "){
-			   $cumplioFiltroGestion = 1;	
+			my $gestionIngresada;
+			if(exists($filtros{'-fg'}) ){
+				$gestionIngresada = $filtros{'-fg'}; 
+			}else{
+				$cumplioFiltroGestion = 1;	
 			}
-			
-			if (defined $gestion and index($gestion, $gestionIngresada) != -1) {
+						
+			if (defined $gestion and defined $gestionIngresada and index($gestion, $gestionIngresada) != -1) {
 			   $cumplioFiltroGestion = 1; 
 			}
 			#Busco por filtro Emisor
 			my $emisor = $data[13];
-			my $emisorIngresado = $filtros{'-fe'};
-			
-			if ($emisorIngresado eq " "){
-			   $cumplioFiltroEmisor = 1;	
+			my $emisorIngresado;
+			if(exists($filtros{'-fe'}) ){
+				$emisorIngresado = $filtros{'-fe'}; 
+			}else{
+				$cumplioFiltroEmisor = 1;	
 			}
-			
-			if (defined $emisor and index($emisor, $emisorIngresado) != -1) {
+ 
+			if (defined $emisor and defined $emisorIngresado and index($emisor, $emisorIngresado) != -1) {
 			   $cumplioFiltroEmisor = 1; 
 			}
 
@@ -187,36 +181,50 @@ sub leerTodosArchivos{
 				#Armamos la salida por consola
 				my $fechaNorma = $data[1];		
 				my $peso = obtenerPeso($causal, $extracto, $palabraClave);
-				my $renglon1 = $tipoNorma." ".$emisor." ".$numero."/".$anio." ".$gestion." ".$fechaNorma." ".$peso."\n";
+				my $renglon1 = $tipoNorma." ".$emisor." ".$numero."/".$anio." ".$gestion." ".$fechaNorma;
+				if($sinPalabraClave == 0){
+					$renglon1 .= " ".$peso;
+				}
+				$renglon1 .= " \n";
 				my $renglon2 = $extracto."\n";
 				my $renglon3 = $causal."\n";
 				#Cargamos en la lista para luego ordenar
 				my $idReg = $data[10];
-				$contenido_resultados_consola{$peso."-".$file.$idReg} = $renglon1.$renglon2.$renglon3;
 				my $lineaSalida = $tipoNorma." ".$emisor." ".$numero." ".$anio." ".$gestion." ".$fechaNorma." ".$causal." ".$extracto." ".$idReg."\n";
-				$contenido_resultados_archivo{$peso."-".$file.$idReg} = $lineaSalida;
+				
+				if($sinPalabraClave == 0){
+					$contenido_resultados_consola{$peso."-".$file.$idReg} = $renglon1.$renglon2.$renglon3;
+					$contenido_resultados_archivo{$peso."-".$file.$idReg} = $lineaSalida;	
+				}else{
+					my $nombreFecha = obtenerNombreDeFecha($fechaNorma);					
+					$contenido_resultados_consola{$nombreFecha."-".$file.$idReg} = $renglon1.$renglon2.$renglon3;
+					$contenido_resultados_archivo{$nombreFecha."-".$file.$idReg} = $lineaSalida;	
+				}		
+				
 				
 			}
 	
 		}#Del while lineas
    	 }#Del while archivos
 	
-	imprimirYGrabarResultadosOrdenados($pidioGuardar);
+	imprimirYGrabarResultadosOrdenados();
 
     	closedir(DIR);
 }
 
 sub imprimirYGrabarResultadosOrdenados(){
-	my $pidioGuardar = $_[0];
 	my $resultadoArchivo;		    
-	foreach my $keyHash (sort{$b <=> $a} keys %contenido_resultados_consola) {
+	foreach my $keyHash (sort{$b cmp $a} keys %contenido_resultados_consola) {
 		my $resultado = $contenido_resultados_consola{$keyHash};
 	    	print "$resultado\n";
 		if ($pidioGuardar == 1){
 			$resultadoArchivo .= $contenido_resultados_archivo{$keyHash};	
 		}
 	    }
-	grabar($resultadoArchivo);	
+	if($pidioGuardar == 1){
+		grabar($resultadoArchivo);	
+	}	
+
 }
 
 
@@ -231,8 +239,15 @@ sub grabar{
 	print "Se generó el archivo $nombreArchivo\n";
 }
 
+sub obtenerNombreDeFecha{
+	my $fecha = $_[0]; 
+	my @data = split("/",$fecha);
+	my $nombre = $data[2].$data[1].$data[0];
+	return $nombre;
+}
 
-sub obtenerPeso(){
+
+sub obtenerPeso{
 	my $causal = $_[0];
 	my $extracto = $_[1];
 	my $palabraClave = $_[2];
@@ -240,6 +255,36 @@ sub obtenerPeso(){
 	my $contadorExtracto = () = $extracto =~ /$palabraClave/g;
 	my $peso = $contadorCausal*10+$contadorExtracto;
 	return $peso;
+}
+
+sub cargarFiltrosYValidarGuardar{
+	#Cargamos los filtros
+	my $i = 1;
+	while($i < $#ARGV){
+		my $parametro = $ARGV[$i]; 
+		if ($parametro eq "-ft" or $parametro eq "-fa" or $parametro eq "-fn" or $parametro eq "-fg" or $parametro eq "-fe" ){
+			if(!exists($filtros{$parametro} ) ){
+				my $valorFiltro = $ARGV[$i+1]; 					
+				$filtros{$parametro} = $valorFiltro;
+				$i += 2;					
+			}	
+		}else{
+			$i += 1;
+		}
+			
+	}
+
+	#Validamos si se ingreso guardar
+	if($i <= $#ARGV){
+		my $ultimaEntrada = $ARGV[$#ARGV];
+		if(defined $ultimaEntrada and $ultimaEntrada eq "-g"){
+			$pidioGuardar = 1;	
+		}
+	}
+
+	foreach my $name (keys %filtros) {
+	    	printf "%-8s %s\n", $name, $filtros{$name};
+	}
 }
 
 sub informar{
