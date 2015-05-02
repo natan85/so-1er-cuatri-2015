@@ -1,0 +1,2 @@
+RecPro:
+El propósito de este comando es detectar la llegada de archivos al directorio NOVEDIR y aceptar/rechazar estos archivos según corresponda
