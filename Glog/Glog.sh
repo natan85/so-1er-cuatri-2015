@@ -116,13 +116,13 @@ then
 	usuario=$USUARIO
 	comando="Glog"	
 	codigo="WAR"
-	mensaje="Archivo log excedido, se recorto"	
+	mensaje="Archivo ${archivo##*/} excedido, se recorto"	
 	
 	# escribir en archivo de log    	
 	echo "$fecha-$usuario-$comando-$codigo-$mensaje" >> "$archivo"
 	
-	# mostrar por pantalla	 
-	echo "[Glog] Archivo $nombre excedido, se recorto"
+	# mostrar por pantalla
+	echo "[Glog] Archivo ${archivo##*/} excedido, se recorto"
 fi
 
 exit 0
