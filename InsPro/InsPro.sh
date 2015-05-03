@@ -36,10 +36,13 @@ DUPDIR="dup"
 function toLower() {
     echo $1 | tr "[:upper:]" "[:lower:]"
 }
+MSGWAR='WAR'
+MSGINFO='INFO'
+MSGERR='ERR'
 
 function loguear() {
-    logDate=`date "+%y-%m-%d_%H-%M-%S"` 
-    echo "$logDate,$USER,$1,$2" >> $LOGFILE
+    logDate=`date "+%Y%m%d %H:%M:%S"`
+    echo "$logDate-$USER-InsPro-$1-$2" >> $LOGFILE
 }
 
 function echoAndLog() {
@@ -78,21 +81,21 @@ function crearDirectorio() {
 function terminosCondiciones() {
     echo "***************************************************************************"
     echo "*     TP SO7508 Primer Cuatrimestre 2015. Tema H Copyright © Grupo 08     *"
-    loguear "I" "TP SO7508 Primer Cuatrimestre 2015. Tema H Copyright © Grupo 08"
+    loguear $MSGINFO "TP SO7508 Primer Cuatrimestre 2015. Tema H Copyright © Grupo 08"
     echo "***************************************************************************"
-    loguear "I" "Al instalar TP SO7508 Primer Cuatrimestre 2015 UD. expresa estar en un todo de acuerdo con los términos y condiciones del \"ACUERDO DE LICENCIA DE SOFTWARE\" incluido en este paquete."
+    loguear $MSGINFO "Al instalar TP SO7508 Primer Cuatrimestre 2015 UD. expresa estar en un todo de acuerdo con los términos y condiciones del \"ACUERDO DE LICENCIA DE SOFTWARE\" incluido en este paquete."
     echo "* Al instalar TP SO7508 Primer Cuatrimestre 2015 UD. expresa estar en un  *"
     echo "* todo de acuerdo  con los términos y condiciones del \"ACUERDO DE         *"
     echo "* LICENCIA DE SOFTWARE\" incluido en este paquete.                         *"
     echo "***************************************************************************"
-    echoAndLog "I" "Acepta? (s/n): "
+    echoAndLog $MSGINFO "Acepta? (s/n): "
 
     read respuesta
 
-    loguear "I" "$respuesta"
+    loguear $MSGINFO "$respuesta"
         
     if [ "$respuesta" = "" ] || [ `toLower $respuesta` != "s" ]; then
-        echoAndLog "I" "Instalacion Cancelada"
+        echoAndLog $MSGINFO "Instalacion Cancelada"
         exit 1
     fi
 }
@@ -104,29 +107,29 @@ function terminosCondiciones() {
 function verificarPerl() {
     perlVersion=`perl --version | grep -o "v[5-9]\.[0-9]\{1,\}\.[0-9]\{1,\}"`
     if [ $? -ne 0 ]; then
-        echoAndLog "SE" "Para instalar Consultar es necesario contar con  Perl 5 o superior instalado."
-        echoAndLog "SE" "Efectúe su instalación e inténtelo nuevamente. Proceso de Instalación Cancelado."
+        echoAndLog $MSGWAR "Para instalar Consultar es necesario contar con  Perl 5 o superior instalado."
+        echoAndLog $MSGWAR "Efectúe su instalación e inténtelo nuevamente. Proceso de Instalación Cancelado."
         exit 1
     else
-        echoAndLog "I" "Version de Perl instalada: $perlVersion"
+        echoAndLog $MSGINFO "Version de Perl instalada: $perlVersion"
     fi
 }
 
 function mensajesInformativos() {
-    echoAndLog "I" "Todos los directorios del sistema serán subdirectorios de $GRUPO"
-    echoAndLog "I" "Todos los componentes de la instalación se obtendrán del repositorio: $GRUPO/$INSTDIR"
+    echoAndLog $MSGINFO "Todos los directorios del sistema serán subdirectorios de $GRUPO"
+    echoAndLog $MSGINFO "Todos los componentes de la instalación se obtendrán del repositorio: $GRUPO/$INSTDIR"
     listado=`ls $GRUPO/$INSTDIR`
-    echoAndLog "I" "Contenido del repositorio: \n$listado\n"
-    echoAndLog "I" "El log de la instalación se almacenara en $GRUPO/$CONFDIR"
+    echoAndLog $MSGINFO "Contenido del repositorio: \n$listado\n"
+    echoAndLog $MSGINFO "El log de la instalación se almacenara en $GRUPO/$CONFDIR"
 	echo ""
-    echoAndLog "I" "Al finalizar la instalación, si la misma fue exitosa se dejara un archivo de configuración en $GRUPO/$CONFDIR"
+    echoAndLog $MSGINFO "Al finalizar la instalación, si la misma fue exitosa se dejara un archivo de configuración en $GRUPO/$CONFDIR"
 	echo ""
 }
 
 function definirDirBinarios() {
     isOk=0
     while [ "$isOk" -eq 0 ]; do
-        echoAndLog "I" "Ingrese el nombre del directorio de ejecutables ($BINDIR):"
+        echoAndLog $MSGINFO "Ingrese el nombre del directorio de ejecutables ($BINDIR):"
         read dirBin
         if [ ! -z "$dirBin" ]; then
             value=`echo $dirBin | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
@@ -134,19 +137,19 @@ function definirDirBinarios() {
                 BINDIR=$dirBin
                 isOk=1
             else
-                echoAndLog "E" "$dirBin no es un nombre de directorio valido."
+                echoAndLog $MSGERR "$dirBin no es un nombre de directorio valido."
             fi
         else
             isOk=1
         fi 
     done
-    loguear "I" "Directorio de ejecutables: $BINDIR"
+    loguear $MSGINFO "Directorio de ejecutables: $BINDIR"
 }
 
 function definirDirMae() {
     isOk=0
     while [ "$isOk" -eq 0 ]; do
-        echoAndLog "I" "Ingrese el nombre del directorio para maestros y tablas ($MAEDIR):"
+        echoAndLog $MSGINFO "Ingrese el nombre del directorio para maestros y tablas ($MAEDIR):"
         read dirMae
         if [ ! -z "$dirMae" ]; then
             value=`echo $dirMae | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
@@ -154,20 +157,20 @@ function definirDirMae() {
                 MAEDIR=$dirMae
                 isOk=1
             else
-                echoAndLog "E" "$dirMae no es un nombre de directorio valido."
+                echoAndLog $MSGERR "$dirMae no es un nombre de directorio valido."
         echo ""
             fi
         else
             isOk=1
         fi 
     done
-    loguear "I" "Directorio para maestros y tablas: $MAEDIR"
+    loguear $MSGINFO "Directorio para maestros y tablas: $MAEDIR"
 }
 
 function definirDirNovedades() {
     isOk=0
     while [ "$isOk" -eq 0 ]; do
-        echoAndLog "I" "Ingrese el nombre del directorio de arribo de novedades ($NOVEDIR):"
+        echoAndLog $MSGINFO "Ingrese el nombre del directorio de arribo de novedades ($NOVEDIR):"
         read dirnovedades
         if [ ! -z "$dirnovedades" ]; then
             value=`echo $dirnovedades | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
@@ -175,21 +178,21 @@ function definirDirNovedades() {
                 NOVEDIR=$dirnovedades
                 isOk=1
             else
-                echoAndLog "E" "$dirnovedades no es un nombre de directorio valido."
+                echoAndLog $MSGERR "$dirnovedades no es un nombre de directorio valido."
         echo ""
             fi
         else
             isOk=1
         fi 
     done
-    loguear "I" "Directorio de arribo de novedades: $NOVEDIR"
+    loguear $MSGINFO "Directorio de arribo de novedades: $NOVEDIR"
 
     #Espacio disponible para NOVEDIR
     freeSize=0
     while [ $freeSize -lt $DATASIZE ]; do
         isOk=0
         while [ "$isOk" -eq 0 ]; do    
-            echoAndLog "I" "Ingrese el espacio minimo requerido para el arribo de novedades en MB ($DATASIZE):"
+            echoAndLog $MSGINFO "Ingrese el espacio minimo requerido para el arribo de novedades en MB ($DATASIZE):"
             read dataSize
             if [ ! -z $dataSize ]; then
                 value=`echo $dataSize | grep "^[0-9]\+$"`
@@ -197,7 +200,7 @@ function definirDirNovedades() {
                     DATASIZE=$dataSize
                     isOk=1
                 else
-                    echoAndLog "E" "$dataSize no es un valor válido. Ingrese un valor numérico"
+                    echoAndLog $MSGERR "$dataSize no es un valor válido. Ingrese un valor numérico"
             echo ""
                 fi
             else
@@ -209,17 +212,17 @@ function definirDirNovedades() {
         freeSize=`df $GRUPO | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 4`
         let freeSize=$freeSize/1024
         if [ $freeSize -lt $DATASIZE ]; then
-            echoAndLog "E" "Insuficiente espacio en disco. Espacio disponible: $freeSize MB. Espacio requerido $DATASIZE MB"
+            echoAndLog $MSGERR "Insuficiente espacio en disco. Espacio disponible: $freeSize MB. Espacio requerido $DATASIZE MB"
         echo ""
         fi
     done
-    loguear "I" "Espacio para el arribo de novedades en MB: $DATASIZE"
+    loguear $MSGINFO "Espacio para el arribo de novedades en MB: $DATASIZE"
 }
 
 function definirDirAceptados() {
     isOk=0
     while [ "$isOk" -eq 0 ]; do
-        echoAndLog "I" "Defina el directorio de grabación de las Novedades aceptadas ($ACEPDIR):"
+        echoAndLog $MSGINFO "Defina el directorio de grabación de las Novedades aceptadas ($ACEPDIR):"
         read dirAcep
         if [ ! -z "$dirAcep" ]; then
             value=`echo $dirAcep | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
@@ -227,20 +230,20 @@ function definirDirAceptados() {
                 ACEPDIR=$dirAcep
                 isOk=1
             else
-                echoAndLog "E" "$dirAcep no es un nombre de directorio valido."
+                echoAndLog $MSGERR "$dirAcep no es un nombre de directorio valido."
         echo ""
             fi
         else
             isOk=1
         fi 
     done
-    loguear "I" "Directorio de grabación de las Novedades aceptadas: $ACEPDIR"
+    loguear $MSGINFO "Directorio de grabación de las Novedades aceptadas: $ACEPDIR"
 }
 
 function definirDirInformes() {
     isOk=0
     while [ "$isOk" -eq 0 ]; do
-        echoAndLog "I" "Defina el directorio de grabación de los informes de salida ($INFODIR):"
+        echoAndLog $MSGINFO "Defina el directorio de grabación de los informes de salida ($INFODIR):"
         read dirInfo
         if [ ! -z "$dirInfo" ]; then
             value=`echo $dirInfo | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
@@ -248,20 +251,20 @@ function definirDirInformes() {
                 INFODIR=$dirInfo
                 isOk=1
             else
-                echoAndLog "E" "$dirInfo no es un nombre de directorio valido."
+                echoAndLog $MSGERR "$dirInfo no es un nombre de directorio valido."
         echo ""
             fi
         else
             isOk=1
         fi 
     done
-    loguear "I" "Directorio de grabación de los informes de salida: $INFODIR"
+    loguear $MSGINFO "Directorio de grabación de los informes de salida: $INFODIR"
 }
 
 function definirDirLog() {
     isOk=0
     while [ "$isOk" -eq 0 ]; do
-        echoAndLog "I" "Ingrese el nombre del directorio de log ($LOGDIR):"
+        echoAndLog $MSGINFO "Ingrese el nombre del directorio de log ($LOGDIR):"
         read dirLog
         if [ ! -z "$dirLog" ]; then
             value=`echo $dirLog | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
@@ -269,19 +272,19 @@ function definirDirLog() {
                 LOGDIR=$dirLog
                 isOk=1
             else
-                echoAndLog "E" "$dirLog no es un nombre de directorio valido."
+                echoAndLog $MSGERR "$dirLog no es un nombre de directorio valido."
         echo ""
             fi
         else
             isOk=1
         fi 
     done
-    loguear "I" "Directorio de log: $LOGDIR"
+    loguear $MSGINFO "Directorio de log: $LOGDIR"
 
     #Tamaño maximo para archivos de log
     isOk=0
     while [ "$isOk" -eq 0 ]; do    
-    echoAndLog "I" "Ingrese el tamaño máximo para los archivos de log en KB ($LOGSIZE):"
+    echoAndLog $MSGINFO "Ingrese el tamaño máximo para los archivos de log en KB ($LOGSIZE):"
     read logSize
     if [ ! -z $logSize ]; then
         value=`echo $logSize | grep "^[0-9]\+$"`
@@ -289,20 +292,20 @@ function definirDirLog() {
             LOGSIZE=$logSize
             isOk=1
         else
-            echoAndLog "E" "$logSize no es un valor válido. Ingrese un valor numérico"
+            echoAndLog $MSGERR "$logSize no es un valor válido. Ingrese un valor numérico"
         echo ""
         fi
     else
         isOk=1
     fi
     done
-    loguear "I" "Tamaño máximo para archivos de log: $LOGSIZE"
+    loguear $MSGINFO "Tamaño máximo para archivos de log: $LOGSIZE"
 }
 
 function definirDirRechazados() {
     isOk=0
     while [ "$isOk" -eq 0 ]; do
-        echoAndLog "I" "Defina el directorio de grabación de Archivos Rechazados ($RECHDIR):"
+        echoAndLog $MSGINFO "Defina el directorio de grabación de Archivos Rechazados ($RECHDIR):"
         read dirRech
         if [ ! -z "$dirRech" ]; then
             value=`echo $dirRech | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
@@ -310,20 +313,20 @@ function definirDirRechazados() {
                 RECHDIR=$dirRech
                 isOk=1
             else
-                echoAndLog "E" "$dirRech no es un nombre de directorio valido."
+                echoAndLog $MSGERR "$dirRech no es un nombre de directorio valido."
         echo ""
             fi
         else
             isOk=1
         fi 
     done
-    loguear "I" "Directorio de grabación de Archivos Rechazados: $RECHDIR"
+    loguear $MSGINFO "Directorio de grabación de Archivos Rechazados: $RECHDIR"
 }
 
 function definirDirProtocolizados() {
     isOk=0
     while [ "$isOk" -eq 0 ]; do
-        echoAndLog "I" "Ingrese el nombre del directorio de grabación de Archivos Protocolizados ($PROCDIR):"
+        echoAndLog $MSGINFO "Ingrese el nombre del directorio de grabación de Archivos Protocolizados ($PROCDIR):"
         read dirProt
         if [ ! -z "$dirProt" ]; then
             value=`echo $dirProt | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
@@ -331,19 +334,19 @@ function definirDirProtocolizados() {
                 PROCDIR=$dirProt
                 isOk=1
             else
-                echoAndLog "E" "$dirProt no es un nombre de directorio valido.\n"
+                echoAndLog $MSGERR "$dirProt no es un nombre de directorio valido.\n"
             fi
         else
             isOk=1
         fi 
     done
-    loguear "I" "Directorio de grabación de Archivos Protocolizados: $PROCDIR"
+    loguear $MSGINFO "Directorio de grabación de Archivos Protocolizados: $PROCDIR"
 }
 
 function definirDirDuplicados() {
     isOk=0
     while [ "$isOk" -eq 0 ]; do
-        echoAndLog "I" "Ingrese el nombre de grabacion de Archivos Duplicados ($DUPDIR):"
+        echoAndLog $MSGINFO "Ingrese el nombre de grabacion de Archivos Duplicados ($DUPDIR):"
         read dirDup
         if [ ! -z "$dirDup" ]; then
             value=`echo $dirDup | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
@@ -351,36 +354,36 @@ function definirDirDuplicados() {
                 DUPDIR=$dirDup
                 isOk=1
             else
-                echoAndLog "E" "$dirDup no es un nombre de directorio valido.\n"
+                echoAndLog $MSGERR "$dirDup no es un nombre de directorio valido.\n"
             fi
         else
             isOk=1
         fi 
     done
-    loguear "I" "Directorio de Archivos Duplicados: $DUPDIR"
+    loguear $MSGINFO "Directorio de Archivos Duplicados: $DUPDIR"
 }
  
 function mostrarParametros() {
-    echoAndLog "I" "********************************************************"
-    echoAndLog "I" "* Parámetros de Instalación del paquete  SisProH     *"
-    echoAndLog "I" "********************************************************"
-    echoAndLog "I" "Directorio de configuración: $CONFDIR"
-    echoAndLog "I" "Directorio de ejecutables: $BINDIR"
-	echoAndLog "I" "Directorio de Maestros y Tablas: $MAEDIR"
-    echoAndLog "I" "Directorio de recepcion de documentos para protocolizacion: $NOVEDIR"
-    echoAndLog "I" "Espacio mínimo libre para arribos: $DATASIZE MB"
-    echoAndLog "I" "Directorio de Archivos Aceptados: $ACEPDIR"
-    echoAndLog "I" "Directorio de Archivos Rechazados: $RECHDIR"
-    echoAndLog "I" "Directorio de Archivos Protocolizados: $PROCDIR"
-    echoAndLog "I" "Directorio para informes y estadisticas: $INFODIR"
-    echoAndLog "I" "Directorio para el repositorio de duplicados: $DUPDIR"
-    echoAndLog "I" "Directorio para Archivos de Log: $LOGDIR"    
-    echoAndLog "I" "Tamaño máximo para los archivos de Log: $LOGSIZE Kb"    
+    echoAndLog $MSGINFO "********************************************************"
+    echoAndLog $MSGINFO "* Parámetros de Instalación del paquete  SisProH     *"
+    echoAndLog $MSGINFO "********************************************************"
+    echoAndLog $MSGINFO "Directorio de configuración: $CONFDIR"
+    echoAndLog $MSGINFO "Directorio de ejecutables: $BINDIR"
+	echoAndLog $MSGINFO "Directorio de Maestros y Tablas: $MAEDIR"
+    echoAndLog $MSGINFO "Directorio de recepcion de documentos para protocolizacion: $NOVEDIR"
+    echoAndLog $MSGINFO "Espacio mínimo libre para arribos: $DATASIZE MB"
+    echoAndLog $MSGINFO "Directorio de Archivos Aceptados: $ACEPDIR"
+    echoAndLog $MSGINFO "Directorio de Archivos Rechazados: $RECHDIR"
+    echoAndLog $MSGINFO "Directorio de Archivos Protocolizados: $PROCDIR"
+    echoAndLog $MSGINFO "Directorio para informes y estadisticas: $INFODIR"
+    echoAndLog $MSGINFO "Directorio para el repositorio de duplicados: $DUPDIR"
+    echoAndLog $MSGINFO "Directorio para Archivos de Log: $LOGDIR"
+    echoAndLog $MSGINFO "Tamaño máximo para los archivos de Log: $LOGSIZE Kb"
 }
 
 function confirmarParametros() {
-    echoAndLog "I" "Si los datos ingresados son correctos de ENTER para iniciar la instalacion"
-    echoAndLog "I" "Si desea modificar algún parámetro oprima cualquier tecla para reiniciar"
+    echoAndLog $MSGINFO "Si los datos ingresados son correctos de ENTER para iniciar la instalacion"
+    echoAndLog $MSGINFO "Si desea modificar algún parámetro oprima cualquier tecla para reiniciar"
     read -s -n1 respuesta
 
     if [ "$respuesta" = "" ]; then
@@ -391,10 +394,10 @@ function confirmarParametros() {
 }
 
 function confirmarInstalacion() {
-    echoAndLog "I" "Iniciando Instalación… Está UD. seguro? (Si/No):"
+    echoAndLog $MSGINFO "Iniciando Instalación… Está UD. seguro? (Si/No):"
     read respuesta
     if [ "$respuesta" = "" ] || [ `toLower $respuesta` != "si" ]; then
-        echoAndLog "I" "Instalacion Cancelada\n"
+        echoAndLog $MSGINFO "Instalacion Cancelada\n"
         exit 1
     fi
 }
@@ -426,15 +429,15 @@ function crearDirectorios() {
 #    3 - Permisos del archivo
 function moverArchivo() {
     if [ ! -f $1 ]; then 
-        loguear "E" "200:Archivo inexistente: ${1##*/}" 
+        loguear $MSGERR "200:Archivo inexistente: ${1##*/}"
         return 1
     elif [ ! -d $2 ]; then
-        loguear "E" "200:Directorio inexistente: $2"
+        loguear $MSGERR "200:Directorio inexistente: $2"
         return 1
     else
         cp $1 $2 2>/dev/null
         if [ $? -ne 0 ]; then
-            loguear "E" "210:No se pudo mover el archivo: ${1##*/}"
+            loguear $MSGERR "210:No se pudo mover el archivo: ${1##*/}"
             return 1
         else
             chmod "$3" "$2/${1##*/}" 2>/dev/null
@@ -530,7 +533,7 @@ function detectarInstalacion {
     do
         if [ -f "$archivo" ]; then
             owner=`ls -l $archivo | awk '{print $3 " " $6 " " $7}'`
-            instalados[$cantInst]="${archivo##*/} $owner"
+            instalados[$cantInst]="${archivo##*/}"
             let cantInst=$cantInst+1
         else
             noinstalados[$cantNoInst]="${archivo##*/}"
@@ -556,23 +559,23 @@ function mostrarComponentesInstalados() {
 
     echo "*********************************************************************" 
     echo "*  TP SO7508 Primer Cuatrimestre 2015. Tema H Copyright © Grupo 08  *"
-    loguear "I" "TP SO7508 Primer Cuatrimestre 2015. Tema H Copyright © Grupo 08"
+    loguear $MSGINFO "TP SO7508 Primer Cuatrimestre 2015. Tema H Copyright © Grupo 08"
     echo "*********************************************************************"
     
     if [ $cantInst -gt 0 ]; then
-        echoAndLog "I" "* Se encuentran instalados los siguientes componentes:\n"
+        echoAndLog $MSGINFO "* Se encuentran instalados los siguientes componentes:\n"
         arr=("${instalados[@]}")
         for index in ${!arr[*]}
         do
-            echoAndLog "I" "  ${arr[$index]}"
+            echoAndLog $MSGINFO "  ${arr[$index]}"
         done
     fi
 
     if [ $cantNoInst -gt 0 ]; then 
-        echoAndLog "I" "\n* Falta instalar los siguientes componentes:\n"    
+        echoAndLog $MSGINFO "\n* Falta instalar los siguientes componentes:\n"
         for item in ${noinstalados[*]}
         do
-            echoAndLog "I" "  $item"
+            echoAndLog $MSGINFO "  $item"
         done
         echo ""
     fi
@@ -582,9 +585,9 @@ function mostrarComponentesInstalados() {
 #----------------------------------------------MAIN---------------------------------------------#
 #-----------------------------------------------------------------------------------------------#
 
-loguear "I" "Inicio de Ejecucion de InsPro"
-loguear "I" "Directorio predefinido de Configuracion : CONFDIR"
-loguear "I" "Log de la instalacion : CONFDIR/InsPro.log"
+loguear $MSGINFO "Inicio de Ejecucion de InsPro"
+loguear $MSGINFO "Directorio predefinido de Configuracion : CONFDIR"
+loguear $MSGINFO "Log de la instalacion : CONFDIR/InsPro.log"
 clear
 chequeoInicial
 leerConfiguracion
@@ -592,7 +595,7 @@ detectarInstalacion
 case "$?" in 
     0 )     #Instalacion completa
         mostrarComponentesInstalados
-        echoAndLog "I" "La Instalacion ya esta COMPLETA. Proceso de Instalacion Cancelado.\n"
+        echoAndLog $MSGINFO "La Instalacion ya esta COMPLETA. Proceso de Instalacion Cancelado.\n"
         exit 0;;
 
     1 )     #No hay instalacion previa
@@ -627,6 +630,6 @@ moverArchivos
 guardarConfiguracion
 mostrarComponentesInstalados
 echo "********************************************************" 
-echoAndLog "I" "Instalacion CONCLUIDA"
+echoAndLog $MSGINFO "Instalacion CONCLUIDA"
 echo "********************************************************" 
 exit $?
