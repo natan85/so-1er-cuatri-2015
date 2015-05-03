@@ -11,7 +11,7 @@
 # *************************************************************************
 
 # Verifico ambiente inicializado
-if ! [ $INICIADO ] 
+if ! [ $AMBIENTE_INICIALIZADO ] 
 then
 	echo "El ambiente no ha sido inicializado previamente, debe inicializarlo mediante el comando IniPro.sh "
 	exit 1
@@ -26,7 +26,7 @@ then
 	exit 1
 fi
 
-if [ $COMANDO != "RecPro.sh" ]
+if [ "grep \"RecPro.sh\" $COMANDO" = "" ]
 then
 	echo "Se ha llamado a Start con un comando no reconocido."
 	#"$GRUPO/$BINDIR"/Glog.sh Start "Se ha llamado a start con un comando no reconocido." ERR

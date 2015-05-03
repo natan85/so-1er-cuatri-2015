@@ -432,7 +432,7 @@ function moverArchivo() {
         loguear "E" "200:Directorio inexistente: $2"
         return 1
     else
-        mv $1 $2 2>/dev/null
+        cp $1 $2 2>/dev/null
         if [ $? -ne 0 ]; then
             loguear "E" "210:No se pudo mover el archivo: ${1##*/}"
             return 1
