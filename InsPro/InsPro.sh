@@ -16,7 +16,7 @@
 # 2 - Instalacion Incompleta
 
 GRUPO=`pwd`
-INSTDIR="inst"
+INSTDIR="src"
 CONFDIR="conf"
 MAEDIR="mae"
 BINDIR="bin"
