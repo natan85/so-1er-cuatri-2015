@@ -2,7 +2,7 @@
 cmdName="RecPro"
 
 # Variable que guarda el path al root de la aplicación (reemplazar con /bin cuando se pongan todos en bin)
-grupo="home/bliberini/TP/so-1er-cuatri-2015"
+grupo="/home/bliberini/TP/so-1er-cuatri-2015"
 
 # Variable que guarda el path a NOVEDIR (reemplazar con la que se obtiene de configuración)
 novedir="$grupo/noveDirMock"
@@ -25,8 +25,14 @@ maedir="$grupo/maeDirMock"
 # Variable que guarda la dirección del directorio de rechazados (reemplazar con la que se obtiene de configuración)
 rechdir="$grupo/rechDirMock"
 
+# Variable que guarda el path a ProPro (reemplazar con ./ProPro.sh cuando se pongan todos en /bin)
+propro="$grupo/ProPro/ProPro.sh"
+
 # Variable que guarda el registro de la gestión del archivo, si la encuentra
 gestion=""
+
+# Flag que verifica si hay archivos pendientes a procesar en ACEPDIR
+hayArchivosPendientes=false
 
 function moverRechazado {
 	filename=$1
@@ -45,7 +51,7 @@ function moverArchivoValido {
 
 
 function verificarGestion {
-	gestion=$(grep -E "^$1" "$maedir/gestiones.mae")
+	gestion=$(grep -E "^$1;" "$maedir/gestiones.mae")
 	if [ ! -n "$gestion" ]
 	then
 		$glog $cmdName "$2 rechazado: Gestión inválida" "ERROR"
@@ -55,7 +61,7 @@ function verificarGestion {
 }
 
 function verificarNorma {
-	row=$(grep -E "^$1" "$maedir/normas.mae")
+	row=$(grep -E "^$1;" "$maedir/normas.mae")
 	if [ ! -n "$row" ]
 	then
 		$glog $cmdName "$2 rechazado: Norma inválida" "ERROR"
@@ -65,7 +71,7 @@ function verificarNorma {
 }
 
 function verificarEmisor {
-	row=$(grep -E "^$1" "$maedir/emisores.mae")
+	row=$(grep -E "^$1;" "$maedir/emisores.mae")
 	if [ ! -n "$row" ]
 	then
 		$glog $cmdName "$2 rechazado: Emisor inválido" "ERROR"
@@ -98,9 +104,9 @@ function verificarFecha {
 		if [ "$fechaFin" == "NULL" ]; then
 			fechaFinDate=$(date +"%Y%m%d")
 		else
-			fechaFinDate=$(date -d "${fecha:6:4}-${fecha:3:2}-${fecha:0:2}" +"%Y%m%d")
+			fechaFinDate=$(date -d "${fechaFin:6:4}-${fechaFin:3:2}-${fechaFin:0:2}" +"%Y%m%d")
 		fi	
-		fechaReg=$(date -d "${fechaIni:6:4}-${fechaIni:3:2}-${fechaIni:0:2}" +"%Y%m%d")
+		fechaReg=$(date -d "${fecha:6:4}-${fecha:3:2}-${fecha:0:2}" +"%Y%m%d")
 		if ! ([ $fechaIniDate -le $fechaReg ] && [ $fechaFinDate -ge $fechaReg ])
 		then
 			$glog $cmdName "$2 rechazado: Fecha fuera del rango de gestión" "ERROR"
@@ -122,30 +128,31 @@ function verificarArchivoNoVacio {
 }
 
 function verificarCamposArchivosValidos {
-	array=$1	
+	IFS='_' read -a array <<< "$filename"
 	codgestion=${array[0]}
 	codnorma=${array[1]}
 	codemisor=${array[2]}
 	nroarchivo=${array[3]}
 	fechaarchivo=${array[4]}
 	
-	verificarGestion $codgestion $2
-	verificarNorma $codnorma $2
-	verificarEmisor $codemisor $2
-	verificarNroArchivo $nroarchivo $2
-	verificarFecha $fechaarchivo $2
-	verificarArchivoNoVacio $2
+	verificarGestion $codgestion $1
+	verificarNorma $codnorma $1
+	verificarEmisor $codemisor $1
+	verificarNroArchivo $nroarchivo $1
+	verificarFecha $fechaarchivo $1
+	verificarArchivoNoVacio $1
+	procesarArchivoValido $1
 }
 
 function verificarFormatoNombreArchivo {
 	filename=$1
-	campos=$(echo "$filename" | tr "_" "\n")
+	IFS='_' read -a campos <<< "$filename"
 	if [ ${#campos[@]} -ne 5 ]
 	then
 		$glog $cmdName "$filename rechazado: Nombre de archivo inválido" "ERROR"
 		moverRechazado $filename
 	else
-		verificarCamposArchivosValidos $campos $filename
+		verificarCamposArchivosValidos $filename
 	fi	
 }
 
@@ -161,19 +168,77 @@ function procesarArchivosNuevos {
 	for archivo in $1
 	do
 		isText=$(file "$novedir/$archivo" | cut -f 2 -d' ')
-		if [ $isText == "UTF-8" ] || [ $isText == "ASCII" ]
+		if [ $isText == "empty" ]
 		then
-			verificarFormatoNombreArchivo $archivo
-			procesarArchivoValido $filename
-		else
-			$glog $cmdName "$archivo rechazado: No es un archivo de texto" "ERROR"
+			$glog $cmdName "$archivo rechazado: Archivo vacío" "ERROR"
 			moverRechazado $filename
+		else
+			if [ $isText == "UTF-8" ] || [ $isText == "ASCII" ]
+			then
+				verificarFormatoNombreArchivo $archivo
+			else
+				$glog $cmdName "$archivo rechazado: No es un archivo de texto" "ERROR"
+				moverRechazado $filename
+			fi
 		fi
 	done
 }
 
+function checkearArchivosAcepdir {
+	pendientes=$1
+	path=$2
+	for entry in $pendientes
+	do
+		if [ -d $entry ]
+		then
+			contenido=$(ls -1 "$path/$entry")
+			for file in $contenido
+			do
+				if [ -f $file ]
+				then
+					hayArchivos=true
+				fi
+				if [ $hayArchivos ]
+				then
+					break;
+				fi
+			done
+		else
+			if [ -f $entry ]
+			then
+				hayArchivos=true
+			fi
+		fi
+		if [ $hayArchivos ]
+		then
+			break;
+		fi
+	done	
+}
+
+function llamarAProPro {
+	proproCorriendo=$(pgrep "ProPro")
+	if [ ! -n "$proproCorriendo" ]
+	then
+		# Modificar para que se llame con Start
+		$propro
+		proproCorriendo=$(pgrep "ProPro")
+		$glog $cmdName "ProPro corriendo bajo el no.: $proproCorriendo" "INFO"
+	else
+		$glog $cmdName "Invocación de ProPro pospuesta para el siguiente ciclo" "INFO"
+	fi
+}
+
 function procesarArchivosPendientes {
-	pendientes=$()
+	pendientes=$(ls -1 $acepdir)
+	if [ ! -n "$pendientes" ]
+	then
+		checkearArchivosAcepdir $pendientes "$acepdir"
+		if [ $hayArchivos ]
+		then
+			llamarAProPro
+		fi
+	fi	
 }
 
 function checkearArchivosNuevos {
