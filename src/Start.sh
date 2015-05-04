@@ -22,14 +22,14 @@ COMANDO=$1
 if [ $# -ne 1 ]
 then
 	echo "No se enviaron los parametros correctos."
-        #$GRUPO/$BINDIR/Glog.sh Start "No se enviaron los parametros correctos." ERR
+        "$GRUPO/$BINDIR/Glog.sh" Start "No se enviaron los parametros correctos." ERR
 	exit 1
 fi
 
 if [ "grep \"RecPro.sh\" $COMANDO" = "" ]
 then
 	echo "Se ha llamado a Start con un comando no reconocido."
-	#"$GRUPO/$BINDIR"/Glog.sh Start "Se ha llamado a start con un comando no reconocido." ERR
+	"$GRUPO/$BINDIR/Glog.sh" Start "Se ha llamado a start con un comando no reconocido." ERR
 	exit 1
 fi
 
@@ -38,12 +38,12 @@ PID=`ps | grep "RecPro.sh" | head -1 | awk '{print $1 }'`
 if [ ! -z "$PID" ]
 then
 	echo "$COMANDO ya se esta ejecutando, se ignora el pedido."
-	#"$GRUPO/$BINDIR"/Glog.sh Start "$COMANDO ya se esta ejecutando, se ignora el pedido." WAR
+	"$GRUPO/$BINDIR/Glog.sh" Start "$COMANDO ya se esta ejecutando, se ignora el pedido." WAR
 else
 	"$GRUPO/$BINDIR/$COMANDO" > /dev/null 2>&1 &
 	PID=$!
 	echo "Ejecutando $COMANDO, PID=$PID."
-	#"$GRUPO/$BINDIR"/Glog.sh Start "Ejecutando $COMANDO, PID=$PID." INFO
+	"$GRUPO/$BINDIR/Glog.sh" Start "Ejecutando $COMANDO, PID=$PID." INFO
 fi
 exit 0
 
