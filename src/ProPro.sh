@@ -6,6 +6,7 @@
 
 # Leer de variables de ambiente GRUPO/XXX cuando se tenga
 grupo="home/bliberini/TP/so-1er-cuatri-2015"
+src="$grupo/src"
 acepdir=$grupo/"acepDirMock"
 maedir=$grupo/"maeDirMock"
 procdir=$grupo/"procDirMock"
@@ -151,8 +152,6 @@ function validarInicio {
 	fi	
 }
 
-# Nota: pasar todos los "echo" a loggeo cuando se integre con GLog
-
 function buscarArchivosAceptados {
 	# Búsqueda de archivos y ordenado por fecha
 	for posFile in $(find "$acepdir" -printf "%p\n" | grep -v "~" | sort -t'_' -k5.7,5.10 -k5.4,5.5 -k5.1,5.2)
@@ -168,25 +167,23 @@ function validarArchivo {
 	# Checkeado de duplicado en PROCDIR/proc
 	if [ -a "$procdir/proc/$filename" ]; then
 		cantRechazados=$((cantRechazados + 1))
-		#Loggear cuando se tenga GLog
+
 		$Glog "$nomCom" "Se rechaza el archivo por estar DUPLICADO." "ERROR"
 
-		#Mover con MOVER cuando se tenga
-		#mv $archivo $rechdir/$filename
+		$Mover $archivo "$rechdir/$filename" "ProPro"
 		continue
 	fi
 
 	# Checkeado de que la combinación COD_NORMA/COD_EMISOR sea válida
 	filenxe=$(echo "$filename" | cut -d'_' -f2-3 --output-delimiter=";")
-	findnxe=$(grep -o -E "$filenxe" $maedir/tab/nxe.tab)
+	findnxe=$(grep -o -E "$filenxe" "$maedir/tab/nxe.tab")
 
 	if [ ! -n "$findnxe" ]; then
 		cantRechazados=$((cantRechazados + 1))
-		#Loggear cuando se tenga GLog
+
 		$Glog "$nomCom" "Se rechaza el archivo. Emisor no habilitado en este tipo de norma" "ERROR"
 
-		#Mover con MOVER cuando se tenga
-		#mv $archivo $rechdir/$filename
+		$Mover $archivo "$rechdir/$filename" "ProPro"
 		continue
 	fi
 	cantAceptados=$((cantAceptados + 1))
@@ -269,7 +266,7 @@ function calcularNormaCorriente {
 		fechaParaNuevoReg=$(date +"%d/%m/%Y")
 		nuevoreg="$contid;$buscreg;$contnorma;$usuario;$fechaParaNuevoReg"
 		echo "$nuevoreg" >> $maedir/tab/axg.tab
-		# Falta loggear con Glog
+
 		$Glog "$nomCom" "Se actualizó la tabla de contadores" "INFO"
 	fi	
 	
@@ -289,7 +286,7 @@ function procesarCorrienteValido {
 
 function cargarDatosRegistro {
 	gestionNom=$(echo "$filename" | cut -d'_' -f1)
-	gestion=$(grep -E "$gestionNom" $maedir/gestiones.mae)	
+	gestion=$(grep -m 1 "$gestionNom" $maedir/gestiones.mae)	
 	norma=$(echo "$registro" | cut -d';' -f 2)
 	fechaReg=$(echo "$registro" | cut -d';' -f 1)
 	causante=$(echo "$registro" | cut -d';' -f 3)
@@ -350,9 +347,23 @@ function validacionCorrientes {
 	fi
 }
 
+function procesarRegistro {
+	cargarDatosRegistro
+	parsearFechasGestionRegistro
+	validacionFechasRegistro
+	if [ $(echo "$gestion" | cut -d';' -f 5) -eq 0 ] || [ "${fechaRegDate:0:4}" -ne "${fechaActual:0:4}" ]
+	then
+		validacionHistoricos
+		
+	else
+		validacionCorrientes
+	fi
+}
+
 function procesarArchivos {
 	nomCom="ProPro"
-	Glog=$grupo/Glog/Glog.sh
+	Glog=$src/Glog.sh
+	Mover=$src/Mover.sh
 	cantArchivos=$(printf '%s\n' "${archivos[@]}" | wc -l)
 	cantAceptados=0
 	cantRechazados=0
@@ -366,25 +377,23 @@ function procesarArchivos {
 		filename=$(basename "$archivo")
 		$Glog "$nomCom" "Archivo a procesar: $filename" "INFO"
 		validarArchivo
-
+		
+		read=false
 		while read -r registro
 		do
-			cargarDatosRegistro
-			parsearFechasGestionRegistro
-			validacionFechasRegistro
-			if [ $(echo "$gestion" | cut -d';' -f 5) -eq 0 ] || [ "${fechaRegDate:0:4}" -ne "${fechaActual:0:4}" ]
-			then
-				validacionHistoricos
-				
-			else
-				validacionCorrientes
-			fi
+			read=true
+			procesarRegistro
 		done < "$archivo"
 		
-		# Falta integrar con Mover
-		mv $archivo $procdir/proc/$filename
+		if ! $read
+		then
+			registro=$(head -n 1 $archivo)
+			procesarRegistro
+		fi
+	
+		$Mover $archivo "$procdir/proc/$filename" "ProPro"
 	done
-	# Falta loggear usando Glog
+
 	$Glog "$nomCom" "Cantidad de archivos procesados: $cantAceptados" "INFO"
 	$Glog "$nomCom" "Cantidad de archivos rechazados: $cantRechazados" "INFO"
 	$Glog "$nomCom" "Fin de ProPro" "INFO"
