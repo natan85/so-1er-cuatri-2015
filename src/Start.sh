@@ -40,7 +40,7 @@ then
 	echo "$COMANDO ya se esta ejecutando, se ignora el pedido."
 	"$GRUPO/$BINDIR/Glog.sh" Start "$COMANDO ya se esta ejecutando, se ignora el pedido." WAR
 else
-	"$GRUPO/$BINDIR/$COMANDO" > /dev/null 2>&1 &
+	"$GRUPO/$BINDIR/$COMANDO" > /dev/null 2>"$GRUPO/$LOGDIR/stderr.log" &
 	PID=$!
 	echo "Ejecutando $COMANDO, PID=$PID."
 	"$GRUPO/$BINDIR/Glog.sh" Start "Ejecutando $COMANDO, PID=$PID." INFO
