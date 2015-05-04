@@ -1,17 +1,17 @@
 # Command name (para pasarle a Glog)
 cmdName="RecPro"
 
-# Variable que guarda el path al root de la aplicación (reemplazar con /bin cuando se pongan todos en bin)
-grupo="/home/bliberini/TP/so-1er-cuatri-2015"
+# Variable que guarda el path al root de la aplicación
+grupo="$GRUPO"
 
-# Variable que guarda el path a NOVEDIR (reemplazar con la que se obtiene de configuración)
-novedir="$grupo/noveDirMock"
+# Variable que guarda el path a NOVEDIR
+novedir="$GRUPO/$NOVEDIR"
 
-# Variable que guarda el path a ACEPDIR (reemplazar con la que se obtiene de configuración)
-acepdir="$grupo/acepDirMock"
+# Variable que guarda el path a ACEPDIR
+acepdir="$GRUPO/$ACEPDIR"
 
-# Variable que guarda el path a Glog (reemplazar con ./Glog.sh cuando se pongan todos en /bin)
-glog="$grupo/Glog/Glog.sh"
+# Variable que guarda el path a Glog
+glog="$GRUPO/$BINDIR/Glog.sh"
 
 # Variable de tiempo de espera hasta volver a ejecutarse (segundos)
 sleepTime=30
@@ -19,14 +19,14 @@ sleepTime=30
 # Variable que mantiene contador de ciclos de ejecución
 timesExe=0
 
-# Variable que guarda la dirección del directorio de maestros (reemplazar con la que se obtiene de configuración)
-maedir="$grupo/maeDirMock"
+# Variable que guarda la dirección del directorio de maestros
+maedir="$GRUPO/$MAEDIR"
 
-# Variable que guarda la dirección del directorio de rechazados (reemplazar con la que se obtiene de configuración)
-rechdir="$grupo/rechDirMock"
+# Variable que guarda la dirección del directorio de rechazados
+rechdir="$GRUPO/$RECHDIR"
 
-# Variable que guarda el path a ProPro (reemplazar con ./ProPro.sh cuando se pongan todos en /bin)
-propro="$grupo/ProPro/ProPro.sh"
+# Variable que guarda el path a ProPro
+propro="$GRUPO/$BINDIR/ProPro.sh"
 
 # Variable que guarda el registro de la gestión del archivo, si la encuentra
 gestion=""

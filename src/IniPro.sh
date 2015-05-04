@@ -75,14 +75,25 @@ function setear_variables_ambiente {
 	$Glog $comando "Directorio de ejecutables: $BINDIR $(ls -l $GRUPO/$BINDIR)" "INFO"
 	$Glog $comando "Directorio de maestros y tablas: $MAEDIR $(ls -l $GRUPO/$MAEDIR)" "INFO"
 	$Glog $comando "Directorio de recepción de documentos para protocolización: $NOVEDIR" "INFO"
-	$Glog $comando "Directorio de archivos aceptados: $ACEPDIR" "INFO"
-	
+	$Glog $comando "Directorio de archivos aceptados: $ACEPDIR" "INFO"	
 	$Glog $comando "Directorio de archivos rechazados: $RECHDIR" "INFO"
 	$Glog $comando "Directorio de archivos protocolizados: $PROCDIR" "INFO"
 	$Glog $comando "Directorio para informes y estadísticas: $INFODIR" "INFO"
 	$Glog $comando "Nombre para el repositorio de duplicados: $DUPDIR" "INFO"
 	$Glog $comando "Directorio para archivos de log: $LOGDIR $(ls -l $GRUPO/$LOGDIR)" "INFO"
 	$Glog $comando "Estado del sistema: INICIALIZADO" "INFO"
+	
+	echo "Directorio de configuración: $CONFDIR"
+	echo "Directorio de ejecutables: $BINDIR"
+	echo "Directorio de maestros y tablas: $MAEDIR"
+	echo "Directorio de recepción de documentos para protocolización: $NOVEDIR"
+	echo "Directorio de archivos aceptados: $ACEPDIR"
+	echo "Directorio de archivos rechazados: $RECHDIR"
+	echo "Directorio de archivos protocolizados: $PROCDIR"
+	echo "Directorio para informes y estadísticas: $INFODIR"
+	echo "Nombre para el repositorio de duplicados: $DUPDIR"
+	echo "Directorio para archivos de log: $LOGDIR"
+	echo "Estado del sistema: INICIALIZADO"	
 }
 
 function preguntar_si_arrancar_rec_pro { 
