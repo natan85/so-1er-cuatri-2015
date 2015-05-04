@@ -31,7 +31,7 @@
 USUARIO="$USER"
 
 # cantidad de lineas a conservar al recortar logs
-LINEAS=10
+LINEAS=30
 
 # codigo por default (cuando no se recibe codigo)
 CODIGO="INFO"
@@ -103,7 +103,6 @@ echo "$fecha-$usuario-$comando-$codigo-$mensaje" >> "$archivo"
 tamanio=$(stat -c %s "$archivo")
 
 # recortar archivo si excedio el tamanio maximo
-LOGSIZE="$(( $LOGSIZE * 1000 ))"
 if [ $tamanio -gt $LOGSIZE ];
 then
 	# copiar las utimas lineas en un archivo temporal
