@@ -3,7 +3,8 @@
 # Sistemas Operativos - 1er cuat 2015
 # Grupo 8 - Trabajo Practico H
 # *******************************************************************
-# Uso: ./Mover.sh <archivo> <destino> <comando>
+# Uso: 
+# ./Mover.sh <archivo_a_mover> <directorio_de_destino> <comando_que_lo_usa>
 # *******************************************************************
 # Los tres parametros son cadenas de caracteres entre comillas dobles.
 # <archivo> (obligatorio): path del archivo a mover
