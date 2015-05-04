@@ -68,6 +68,8 @@ function setear_variables_ambiente {
 		eval export $variable
 	done
 
+	export AMBIENTE_INICIALIZADO
+
 	cargar_glog
 	if [ $? -eq 1 ]; then return 1; fi
 
@@ -106,7 +108,7 @@ function preguntar_si_arrancar_rec_pro {
 		echo "Puede iniciar RecPro en otro momento usando $BINDIR/Start.sh $BINDIR/RecPro.sh"
 	else
 		#Chequear si RecPro está corriendo? O lo hace Start?
-		bash "$GRUPO/$BINDIR/Start.sh \"$GRUPO/$BINDIR/RecPro.sh\""
+		bash "$GRUPO/$BINDIR/Start.sh" "\"$GRUPO/$BINDIR/RecPro.sh\""
 		echo "Puede finalizar RecPro usando $BINDIR/Stop.sh"
 	fi
 
@@ -122,6 +124,5 @@ if [ $? -eq 1 ]; then return 1; fi
 setear_variables_ambiente
 if [ $? -eq 1 ]; then return 1; fi
 preguntar_si_arrancar_rec_pro
-export AMBIENTE_INICIALIZADO
 return 0
 #exit 0
