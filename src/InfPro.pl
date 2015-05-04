@@ -17,7 +17,8 @@ our %posCamposConsulta = (
 			'emisor' => 13,
 			);
 our $pidioGuardar = 0;
-our $sinPalabraClave = 0;
+our $sinPalabraClave = 1;
+our $palabraClave;
 our %contenido_resultados_consola;
 our %contenido_resultados_archivo;
 ###### Se valida que el comando no este en ejecución#####
@@ -86,7 +87,11 @@ sub validarPalabraClaveYGuardar
 		$pidioGuardar = 1;		
 	}
 	if (defined $parametro and $parametro ne "-g")	{
-		my $parametro2 = $ARGV[2];			
+		
+		$palabraClave = $parametro;		
+		$sinPalabraClave = 0;	
+		my $parametro2 = $ARGV[2];
+	
 		if (defined $parametro2 and $parametro2 eq "-g")	
 		{
 			$pidioGuardar = 1;		
@@ -105,14 +110,14 @@ sub consultar2{
 	}
 }
 
-sub leerTodosArchivos
+sub leerTodosArchivos2
 {
 	#my $palabraClave = shift;
 	my $ruta = $ENV{"PROCDIR"};
 	opendir (DIR, $ruta) or die $!;
 	#Leo cada archivo
 	while (my $file = readdir(DIR)) {
-		buscarEnArchivo($file);		
+		buscarEnArchivo($file,$ruta);		
    	 }#Del while archivos
 	
 	imprimirYGrabarResultadosOrdenados();
@@ -120,14 +125,44 @@ sub leerTodosArchivos
     	closedir(DIR);
 }
 
+sub leerTodosArchivosSubdirectorios
+{
+	my $dir = $ENV{"PROCDIR"};
+	my $DIR;
+	# Leo el directorio raiz
+	opendir $DIR, $dir or die "opendir $dir - $!";
+	my @entries = readdir $DIR;
+
+	# Obtengo los subdirectorio
+	my @subdirs = grep { -d "$dir/$_" } @entries;
+
+	# Elimino los directorios ocultos
+	@subdirs = grep { !/^\./ } @subdirs;
+	print "Raiz: $dir \n";
+	for my $subdir ( @subdirs ) {
+		print "Subdirectorio: $subdir \n";
+		my $subdirCompleto = $dir."/".$subdir;
+		opendir (SUBDIR, $subdirCompleto) or die $!;
+		#Leo cada archivo
+		while (my $file = readdir(SUBDIR)) {
+			print "Archivo: $file \n";
+			buscarEnArchivo($file,$subdirCompleto);		
+	   	}#Del while archivos
+		closedir(SUBDIR);
+	}
+
+	imprimirYGrabarResultadosOrdenados();	
+	closedir $DIR;
+}
+
 sub buscarEnArchivo
 {
 	my $file = $_[0]; 
-	my $ruta = $ENV{"PROCDIR"};
+	my $ruta = $_[1]; 
 	my $filename = $ruta.'/'.$file;
+	print "Archivo a leer: $filename \n";
 	open(my $fh, '<:encoding(UTF-8)', $filename)
 	 or die "No se pudo abrir el archivo '$filename' $!";
-	my $palabraClave = $ARGV[1];
 		#Leo cada linea 
 		while (my $row = <$fh>) {
 			chomp $row;
@@ -368,31 +403,53 @@ sub cargarFiltrosYValidarGuardar{
 
 sub imprimirFiltros
 {
+	print "Palabra clave: $palabraClave \n";	
 	foreach my $name (keys %filtros) {
 	    	printf "%-8s %s\n", $name, $filtros{$name};
 	}
 }
 
 sub informar{
-	
+	my $ruta = $ENV{"INFODIR"};
+	print "Ruta de Informar $ruta \n";
+	#Si pasaron la lista de archivos
+	if($#ARGV > 1) 
+	{
+		my $i = 1;
+		while($i < $#ARGV){
+			my $file = $ARGV[$i];
+			buscarEnArchivo($file,$ruta);
+		}	
+		
+	}else{
+		opendir (DIR, $ruta) or die $!;
+		#Leo cada archivo
+		while (my $file = readdir(DIR)) {
+			buscarEnArchivo($file,$ruta);		
+	   	 }
+
+    		closedir(DIR);
+	}
+
+	imprimirYGrabarResultadosOrdenados();
 	
 }
 
 sub menuFiltros{
 	my $input = '';
 
-	while ($input ne '7')
+	while ($input ne '8')
 	{
 	    #clear_screen();
  
- print "1. Filtrar por tipo de norma\n".
-	    print "1. Filtrar por tipo de norma\n".
-		  "2. Filtrar por año [año o año desde-año hasta]\n". 
-		  "3. Filtrar por numero de norma [norma o norma desde-norma hasta]\n". 
-		  "4. Filtrar por gestión\n". 
-		  "5. Filtrar por emisor\n".
-		  "6. Ejecutar consulta\n".
-		  "7. Salir\n";
+	    print "1. Ingresar palabra clave\n".
+		  "2. Filtrar por tipo de norma\n".
+		  "3. Filtrar por año [año o año desde-año hasta]\n". 
+		  "4. Filtrar por numero de norma [norma o norma desde-norma hasta]\n". 
+		  "5. Filtrar por gestión\n". 
+		  "6. Filtrar por emisor\n".
+		  "7. Ejecutar consulta\n".
+		  "8. Salir\n";
 
 	    print "Ingrese su opción: ";
 	    $input = <STDIN>;
@@ -402,14 +459,25 @@ sub menuFiltros{
 	    {
 		case '1'
 		{
+		    
+		    print "Ingrese palabra clave: ";
+		    my $palabra = <STDIN>;
+		    chomp($palabra);
+		    $palabraClave = $palabra;		
+		    $input = '';
+
+		}
+
+		case '2'
+		{
 		    print "Ingrese el tipo de norma: ";
 		    my $tipo = <STDIN>;
 		    chomp($tipo);
 		    $filtros{"-ft"} = $tipo;		
-		    $input = '';
+		    $input = ''; 
 		}
 
-		case '2'
+		case '3'
 		{
 		    print "Ingrese el año o rango: ";
 		    my $anio = <STDIN>;
@@ -418,7 +486,7 @@ sub menuFiltros{
 		    $input = '';
 		}
 
-		case '3'
+		case '4'
 		{
 		    print "Ingrese el número o rango: ";
 		    my $numero = <STDIN>;
@@ -427,7 +495,7 @@ sub menuFiltros{
 		    $input = '';
 		}
 
-		case '4'
+		case '5'
 		{
 		    print "Ingrese la gestión: ";
 		    my $gestion = <STDIN>;
@@ -436,7 +504,7 @@ sub menuFiltros{
 		    $input = '';
 		}
 
-		case '5'
+		case '6'
 		{
 		    print "Ingrese el emisor: ";
 		    my $emisor = <STDIN>;
@@ -445,15 +513,13 @@ sub menuFiltros{
 		    $input = '';
 		}
 
-		case '6'
+		case '7'
 		{
 			
 			my $cantFiltrosCargados = keys %filtros;
 			if($cantFiltrosCargados > 0){
-				leerTodosArchivos();		   
-				foreach my $name (keys %filtros) {
-		    			printf "%-8s %s\n", $name, $filtros{$name};
-				}
+				imprimirFiltros();
+				leerTodosArchivosSubdirectorios();		   
 			}else{
 				print "Debe realizar al menos un filtro. \n";
 			}
