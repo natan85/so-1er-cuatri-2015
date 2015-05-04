@@ -108,7 +108,7 @@ function preguntar_si_arrancar_rec_pro {
 		echo "Puede iniciar RecPro en otro momento usando $BINDIR/Start.sh $BINDIR/RecPro.sh"
 	else
 		#Chequear si RecPro está corriendo? O lo hace Start?
-		bash "$GRUPO/$BINDIR/Start.sh" "\"$GRUPO/$BINDIR/RecPro.sh\""
+		. "$GRUPO/$BINDIR/Start.sh" "RecPro.sh"
 		echo "Puede finalizar RecPro usando $BINDIR/Stop.sh"
 	fi
 

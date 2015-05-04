@@ -45,5 +45,5 @@ else
 	echo "Ejecutando $COMANDO, PID=$PID."
 	"$GRUPO/$BINDIR/Glog.sh" Start "Ejecutando $COMANDO, PID=$PID." INFO
 fi
-exit 0
+#exit 0
 
