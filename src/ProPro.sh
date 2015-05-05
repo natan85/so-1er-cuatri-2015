@@ -5,16 +5,14 @@
 #
 
 # Leer de variables de ambiente GRUPO/XXX cuando se tenga
-grupo="home/bliberini/TP/so-1er-cuatri-2015"
+grupo="$GRUPO"
 src="$grupo/src"
-acepdir=$grupo/"acepDirMock"
-maedir=$grupo/"maeDirMock"
-procdir=$grupo/"procDirMock"
-rechdir=$grupo/"rechDirMock"
-logdir=$grupo/"logDirMock"
+acepdir="$grupo/$ACEPDIR"
+maedir="$grupo/$MAEDIR"
+procdir="$grupo/$PROCDIR"
+rechdir="$grupo/$RECHDIR"
+logdir="$grupo/$LOGDIR"
 archivos=()
-
-cd "/"
 
 function validarInicio {
 
@@ -153,6 +151,7 @@ function validarInicio {
 }
 
 function buscarArchivosAceptados {
+	$Glog "$nomCom" "$acepdir"
 	# Búsqueda de archivos y ordenado por fecha
 	for posFile in $(find "$acepdir" -printf "%p\n" | grep -v "~" | sort -t'_' -k5.7,5.10 -k5.4,5.5 -k5.1,5.2)
 	do
@@ -362,8 +361,8 @@ function procesarRegistro {
 
 function procesarArchivos {
 	nomCom="ProPro"
-	Glog=$src/Glog.sh
-	Mover=$src/Mover.sh
+	Glog="$GRUPO/$BINDIR/Glog.sh"
+	Mover="$GRUPO/$BINDIR/Mover.sh"
 	cantArchivos=$(printf '%s\n' "${archivos[@]}" | wc -l)
 	cantAceptados=0
 	cantRechazados=0
