@@ -19,7 +19,7 @@ EXPLICACIÓN DE INSTALACIÓN Y USO
 a) Abra una terminal de consola
 b) Párese en el directorio de trabajo donde copió los archivos del instalable:
 	
-	> cd /PATH_DEL_DIRECTORIO/
+	> cd PATH_DEL_DIRECTORIO
 
 c) Ejecute el comando:
 
