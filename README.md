@@ -3,13 +3,14 @@ EXPLICACIÓN DE INSTALACIÓN Y USO
 ***************************************
  COPIAR INSTALABLE DESDE MEDIO EXTERNO
 ***************************************
+	a) Montar el dispositivo de almacenamiento con el contenido del TP (pen drive, cd, etc).
+	b) Extraer el contenido del paquete so1c2015g8.tgz en una ubicación temporal.
+	c) Asegurarse que el usuario posea permisos de escritura en esa ubicacion.
 
-a) Inserte el dispositivo externo con el programa comprimido
-b) Cree en el directorio corriente un directorio de trabajo
-c) Copie el archivo *.tgz en el directorio creado
-d) Descomprima el archivo *.tgz de manera de generar un archivo *.tar con el mismo nombre
-e) Extraiga los archivos del .tar
-f) Elimine tanto el archiov *.tgz como el archivo *.tar del directorio de trabajo 
+	c) Por ejemplo para extraer en temp, ejecutar exactamente los siguientes comandos:
+	- mkdir temp
+	- tar xvzf <dispositivo>/so1c2015g8.tgz -C temp
+	- cd temp
 
 ***************************************
              INSTALACIÓN
@@ -22,13 +23,17 @@ b) Párese en el directorio de trabajo donde copió los archivos del instalable:
 
 c) Ejecute el comando:
 
-	> InsPro/InsPro.sh
+	> ./InsPro.sh
+
+* la instalacion no posee argumentos, que consideramos no necesarios.
 
 d) Siga los pasos de instalación del programa. El mismo le informará cuando se haya terminado la instalación y los posibles errores, si los hubiera
 
 ***************************************
            POST-INSTALACIÓN
 ***************************************
+
+
 
 La instalación creará los siguientes directorios:
 
@@ -41,6 +46,7 @@ La instalación creará los siguientes directorios:
 	- BINDIR
 	- LOGDIR
 	- RECHDIR
+
 
 En las direcciones que haya elegido el usuario. 
 
