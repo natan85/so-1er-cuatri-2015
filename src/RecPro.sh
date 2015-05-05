@@ -189,16 +189,16 @@ function procesarArchivosNuevos {
 }
 
 function checkearArchivosAcepdir {
-	pendientes=$1
-	path=$2
+	pendientes=($1/*)
+	path=$1
 	for entry in $pendientes
 	do
 		if [ -d $entry ]
 		then
-			contenido=$(ls -1 "$path/$entry")
+			contenido=$(ls -1 "$entry")
 			for file in $contenido
 			do
-				if [ -f $file ]
+				if [ -f "$entry/$file" ]
 				then
 					hayArchivos=true
 				fi
@@ -233,11 +233,11 @@ function llamarAProPro {
 	fi
 }
 
-function procesarArchivosPendientes {
-	pendientes=$(ls -1 $acepdir)
-	if [ ! -n "$pendientes" ]
+function procesarArchivosPendientes {	
+	pendientes=$($acepdir/*)
+	if [ ${#pendientes[@]} -ne 0 ]
 	then
-		checkearArchivosAcepdir $pendientes "$acepdir"
+		checkearArchivosAcepdir "$acepdir"
 		if [ $hayArchivos ]
 		then
 			llamarAProPro
