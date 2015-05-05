@@ -23,7 +23,7 @@ BINDIR="bin"
 NOVEDIR="novedades"
 DATASIZE=100 #MB
 LOGDIR="log"
-LOGSIZE=400 #KB
+LOGSIZE=400000 #bytes
 LOGFILE="$CONFDIR/InsPro.log"
 CONFFILE="$CONFDIR/InsPro.conf"
 ACEPDIR="a_protocolizar"
@@ -36,6 +36,9 @@ DUPDIR="dup"
 function toLower() {
     echo $1 | tr "[:upper:]" "[:lower:]"
 }
+
+##################################################
+#tipos de mensajes de informacion para el Log
 MSGWAR='WAR'
 MSGINFO='INFO'
 MSGERR='ERR'
@@ -50,9 +53,13 @@ function echoAndLog() {
     loguear "$1" "$2"
 }
 
+
+
+###################################################
+#Chequear si se puede escribir el dir actual, y si existe la carpeta de los sources
 function chequeoInicial() {
     if [ ! -w "$GRUPO" ]; then
-        echo "No tiene permisos de escitura en el directorio de instalación"
+        echo "No tiene permisos de escritura en el directorio de instalación"
         echo "Instalación cancelada"
         exit 2
     fi
@@ -67,7 +74,7 @@ function chequeoInicial() {
         exit 2
     fi
 }
-
+################################################
 #Funcion para crear directorios
 #Parametros:
 #1 - Permisos 
@@ -78,6 +85,8 @@ function crearDirectorio() {
     fi
 }
 
+##############################################################################
+#Presentación inicial de la Instalación
 function terminosCondiciones() {
     echo "***************************************************************************"
     echo "*     TP SO7508 Primer Cuatrimestre 2015. Tema H Copyright © Grupo 08     *"
@@ -99,7 +108,7 @@ function terminosCondiciones() {
         exit 1
     fi
 }
-
+#######################################################################
 #Funcion que verifica si la version de perl instalada es 5 o superior
 #Return Codes:
 #    0 - La version instalada es 5 o superior
@@ -284,7 +293,7 @@ function definirDirLog() {
     #Tamaño maximo para archivos de log
     isOk=0
     while [ "$isOk" -eq 0 ]; do    
-    echoAndLog $MSGINFO "Ingrese el tamaño máximo para los archivos de log en KB ($LOGSIZE):"
+    echoAndLog $MSGINFO "Ingrese el tamaño máximo para los archivos de log en bytes ($LOGSIZE):"
     read logSize
     if [ ! -z $logSize ]; then
         value=`echo $logSize | grep "^[0-9]\+$"`
@@ -444,7 +453,9 @@ function moverArchivo() {
         fi
     fi
 }
-
+######################################################################
+#Se copian los scripts y los archivos asignandoles permisos
+#los de $MAEDIR son de solo lectura y los otros lectura ejecución
 function moverArchivos() {
     echo "Moviendo archivos Maestros y Tablas ..."
 	echo ""    
@@ -464,7 +475,8 @@ function moverArchivos() {
     moverArchivo "$GRUPO/$INSTDIR/ProPro.sh" "$GRUPO/$BINDIR" "775"
     moverArchivo "$GRUPO/$INSTDIR/InfPro.pl" "$GRUPO/$BINDIR" "775"
 }
-
+##############################################################
+#Lectura de el archivo de configuración previa
 function leerConfiguracion() {
     if [ -f $CONFFILE ]; then
         GRUPO=`grep "GRUPO" $CONFFILE | cut -s -f2 -d'='`    
@@ -513,7 +525,7 @@ function detectarInstalacion {
     unset instalados
     unset noinstalados
     
-    archivosAVerificar=(    "$GRUPO/$BINDIR/Start.sh"
+    archivosAVerificar=(  "$GRUPO/$BINDIR/Start.sh"
                 "$GRUPO/$BINDIR/Stop.sh"
                 "$GRUPO/$BINDIR/Mover.sh"
                 "$GRUPO/$BINDIR/Glog.sh"
@@ -598,7 +610,7 @@ case "$?" in
         echoAndLog $MSGINFO "La Instalacion ya esta COMPLETA. Proceso de Instalacion Cancelado.\n"
         exit 0;;
 
-    1 )     #No hay instalacion previa
+    1 ) #No hay instalacion previa
         terminosCondiciones
         verificarPerl
         mensajesInformativos

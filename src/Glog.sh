@@ -31,7 +31,7 @@
 USUARIO="$USER"
 
 # cantidad de lineas a conservar al recortar logs
-LINEAS=10
+LINEAS=30
 
 # codigo por default (cuando no se recibe codigo)
 CODIGO="INFO"
@@ -122,7 +122,7 @@ then
 	echo "$fecha-$usuario-$comando-$codigo-$mensaje" >> "$archivo"
 	
 	# mostrar por pantalla
-	echo "[Glog] Archivo ${archivo##*/} excedido, se recorto"
+	#echo "[Glog] Archivo ${archivo##*/} excedido, se recorto"
 fi
 
 exit 0
