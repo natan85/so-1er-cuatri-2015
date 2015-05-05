@@ -5,7 +5,10 @@ use Fcntl qw(:flock);
 use feature qw/switch/; 
 use Switch;
 our %filtros;
-our %posCamposConsulta = (
+
+our %emisoresDesc;
+
+our %posCamposArchConsulta = (
 			'fechaNorma' => 1,
 			'numero' => 2,	
 			'anio' => 3,		
@@ -16,6 +19,38 @@ our %posCamposConsulta = (
 			'tipoNorma' => 12,
 			'emisor' => 13,
 			);
+
+our %posCamposArchInfo = (
+			'tipoNorma' => 0,
+			'descEmisor' => 1,	
+			'emisor' => 2,		
+			'numero' => 3,
+			'anio' => 4,
+			'gestion' => 5,	
+			'fechaNorma' => 6,		
+			'causante' => 7,
+			'extracto' => 8,
+			'idReg' => 9,
+			);
+
+our %posCamposGestiones = (
+			'codigo' => 0,
+			'fechaDesde' => 1,	
+			'fechaHasta' => 2,		
+			'descripcion' => 3,
+			);
+
+our %posCamposEmisores = (
+			'codigo' => 0,
+			'descripcion' => 1,	
+			);
+
+our %posCamposNormas = (
+			'codigo' => 0,
+			'descripcion' => 1,	
+			);
+
+our %descripcionFiltros;
 our $pidioGuardar = 0;
 our $sinPalabraClave = 1;
 our $palabraClave;
@@ -72,9 +107,16 @@ print "Ayuda: InfPro [opción] [argumentos]
 }
 
 sub consultar{
+	cargarMapaEmisores();
 	validarPalabraClaveYGuardar();
 	menuFiltros();
 }
+
+sub informar{
+	validarPalabraClaveYGuardar();
+	cargarMapaEmisores();
+	menuFiltros();	
+} 
 
 sub validarPalabraClaveYGuardar
 {
@@ -99,30 +141,30 @@ sub validarPalabraClaveYGuardar
 	}
 }
 
-sub consultar2{
-	cargarFiltrosYValidarGuardar();
-	my $cantFiltros = keys %filtros;
-	#print "$cantFiltros \n";
-	if($cantFiltros < 1 ){
-		print "Debe utilizar al menos un filtro\n";	
-	}else{
-		leerTodosArchivos();
-	}
-}
-
-sub leerTodosArchivos2
+sub leerArchivosSubdirectoriosResultados
 {
-	#my $palabraClave = shift;
-	my $ruta = $ENV{"PROCDIR"};
-	opendir (DIR, $ruta) or die $!;
-	#Leo cada archivo
-	while (my $file = readdir(DIR)) {
-		buscarEnArchivo($file,$ruta);		
-   	 }#Del while archivos
-	
-	imprimirYGrabarResultadosOrdenados();
+	my $ruta = $ENV{"INFODIR"};
+	print "Ruta de Informar $ruta \n";
+	#Si pasaron la lista de archivos
+	if($#ARGV > 1) 
+	{
+		my $i = 1;
+		while($i < $#ARGV){
+			my $file = $ARGV[$i];
+			buscarEnArchivo($file,$ruta,%posCamposArchInfo);
+		}	
+		
+	}else{
+		opendir (DIR, $ruta) or die $!;
+		#Leo cada archivo
+		while (my $file = readdir(DIR)) {
+			buscarEnArchivo($file,$ruta,%posCamposArchInfo);		
+	   	 }
 
-    	closedir(DIR);
+    		closedir(DIR);
+	}
+
+	imprimirYGrabarResultadosOrdenados();
 }
 
 sub leerTodosArchivosSubdirectorios
@@ -140,27 +182,41 @@ sub leerTodosArchivosSubdirectorios
 	@subdirs = grep { !/^\./ } @subdirs;
 	print "Raiz: $dir \n";
 	for my $subdir ( @subdirs ) {
-		print "Subdirectorio: $subdir \n";
-		my $subdirCompleto = $dir."/".$subdir;
-		opendir (SUBDIR, $subdirCompleto) or die $!;
-		#Leo cada archivo
-		while (my $file = readdir(SUBDIR)) {
-			print "Archivo: $file \n";
-			buscarEnArchivo($file,$subdirCompleto);		
-	   	}#Del while archivos
-		closedir(SUBDIR);
+		if (exists($filtros{'-fg'})){
+			my $gestion = $filtros{'-fg'}; 
+			if(defined $gestion and ($subdir eq $gestion)){
+				print "Subdirectorio: $subdir \n";
+				buscarEnDirectorio($dir."/".$subdir);	
+			}
+		}else{
+			print "Subdirectorio: $subdir \n";
+			buscarEnDirectorio($dir."/".$subdir);
+		}
+		
 	}
 
 	imprimirYGrabarResultadosOrdenados();	
 	closedir $DIR;
 }
 
+sub buscarEnDirectorio
+{
+	my $subdirCompleto = $_[0]; 
+	opendir (SUBDIR, $subdirCompleto) or die $!;
+	#Leo cada archivo
+	while (my $file = readdir(SUBDIR)) {
+		#print "Archivo: $file \n";
+		buscarEnArchivo($file,$subdirCompleto,%posCamposArchConsulta);		
+   	}#Del while archivos
+	closedir(SUBDIR);
+}
+
 sub buscarEnArchivo
 {
 	my $file = $_[0]; 
 	my $ruta = $_[1]; 
+	my (%posCamposArch) = @_;
 	my $filename = $ruta.'/'.$file;
-	print "Archivo a leer: $filename \n";
 	open(my $fh, '<:encoding(UTF-8)', $filename)
 	 or die "No se pudo abrir el archivo '$filename' $!";
 		#Leo cada linea 
@@ -172,47 +228,48 @@ sub buscarEnArchivo
 
 			#Busco los valores de causal y extracto		
 			my @data = split(";",$row);
-			my $causal = $data[$posCamposConsulta{'causante'}];
-			my $extracto = $data[$posCamposConsulta{'extracto'}];
+			my $causal = $data[$posCamposArch{'causante'}];
+			my $extracto = $data[$posCamposArch{'extracto'}];
 			#leerArchivo($file);
 			if ($sinPalabraClave == 1){
 				$cumplioCausal = 1;
 				$cumplioExtracto = 1;
 			}else{
-				if (defined $causal and defined $palabraClave and index($causal, $palabraClave) != -1) {
+				if (defined $causal and defined $palabraClave and index(lc($causal), lc($palabraClave)) != -1) {
 				   $cumplioCausal = 1; 
 				}
-				if(defined $extracto and defined $palabraClave and index($extracto, $palabraClave) != -1){
+				if(defined $extracto and defined $palabraClave and index(lc($extracto), lc($palabraClave)) != -1){
 				   $cumplioExtracto = 1;	
 				}
 
 			}			
 
 			#Busco por filtro Tipo Norma
-			my $tipoNorma = $data[$posCamposConsulta{'tipoNorma'}];
+			my $tipoNorma = $data[$posCamposArch{'tipoNorma'}];
 			my $cumplioFiltroTipoNorma = validarCumplioFiltroTipoNorma($tipoNorma);
 
 			#Busco por filtro Año
-			my $anio = $data[$posCamposConsulta{'anio'}];
+			my $anio = $data[$posCamposArch{'anio'}];
 			my $cumplioFiltroAnio = validarCumplioFiltroAnio($anio);
 	
 			#Busco por filtro numero Norma
-			my $numero = $data[$posCamposConsulta{'numero'}];
+			my $numero = $data[$posCamposArch{'numero'}];
 			my $cumplioFiltroNumeroNorma = validarCumplioFiltroNumeroNorma($numero);
 
 			#Busco por filtro Gestion
-			my $gestion = $data[$posCamposConsulta{'gestion'}];
+			my $gestion = $data[$posCamposArch{'gestion'}];
 			my $cumplioFiltroGestion = validarCumplioFiltroGestion($gestion);
 			
 			#Busco por filtro Emisor
-			my $emisor = $data[$posCamposConsulta{'emisor'}];
+			my $emisor = $data[$posCamposArch{'emisor'}];
 			my $cumplioFiltroEmisor = validarCumplioFiltroEmisor($emisor);
 			
 
 			if (($cumplioCausal == 1 or $cumplioExtracto == 1) and $cumplioFiltroTipoNorma == 1 and $cumplioFiltroAnio == 1 and $cumplioFiltroNumeroNorma == 1 and $cumplioFiltroGestion == 1 and $cumplioFiltroEmisor == 1){
 				#Armamos la salida por consola
-				my $fechaNorma = $data[$posCamposConsulta{'fechaNorma'}];		
-				my $renglon1 = $tipoNorma." ".$emisor." ".$numero."/".$anio." ".$gestion." ".$fechaNorma;
+				my $fechaNorma = $data[$posCamposArch{'fechaNorma'}];	
+				my $descEmisor = $emisoresDesc{$emisor};	
+				my $renglon1 = $tipoNorma." ".$descEmisor."(".$emisor.") ".$numero."/".$anio." ".$gestion." ".$fechaNorma;
 				my $peso;				
 				if($sinPalabraClave == 0 and defined $palabraClave){
 					$peso = obtenerPeso($causal, $extracto, $palabraClave);
@@ -222,159 +279,43 @@ sub buscarEnArchivo
 				my $renglon2 = $extracto."\n";
 				my $renglon3 = $causal."\n";
 				#Cargamos en la lista para luego ordenar
-				my $idReg = $data[$posCamposConsulta{'idReg'}];
-				my $lineaSalida = $tipoNorma." ".$emisor." ".$numero." ".$anio." ".$gestion." ".$fechaNorma." ".$causal." ".$extracto." ".$idReg."\n";
+				my $idReg = $data[$posCamposArch{'idReg'}];
+				my $lineaSalida = $tipoNorma.";".$descEmisor.";".$emisor.";".$numero.";".$anio.";".$gestion.";".$fechaNorma.";".$causal.";".$extracto.";".$idReg."\n";
 				
 				if($sinPalabraClave == 0){
-					$contenido_resultados_consola{$peso."-".$file.$idReg} = $renglon1.$renglon2.$renglon3;
-					$contenido_resultados_archivo{$peso."-".$file.$idReg} = $lineaSalida;	
+					$contenido_resultados_consola{$peso."-".$idReg} = $renglon1.$renglon2.$renglon3;
+					$contenido_resultados_archivo{$peso."-".$idReg} = $lineaSalida;	
 				}else{
 					my $nombreFecha = obtenerNombreDeFecha($fechaNorma);					
-					$contenido_resultados_consola{$nombreFecha."-".$file.$idReg} = $renglon1.$renglon2.$renglon3;
-					$contenido_resultados_archivo{$nombreFecha."-".$file.$idReg} = $lineaSalida;	
+					$contenido_resultados_consola{$nombreFecha."-".$idReg} = $renglon1.$renglon2.$renglon3;
+					$contenido_resultados_archivo{$nombreFecha."-".$idReg} = $lineaSalida;	
 				}		
 				
 				
 			}
 	}#Del while lineas
+	close($fh);
 }
-
-sub validarCumplioFiltroEmisor
+#**************************METODS PARA CARGAS INICIALES ***********************************
+sub cargarMapaEmisores
 {
-	my $cumplioFiltroEmisor = 0;	
-	my $emisor = $_[0];	
-	my $emisorIngresado;
-	if(exists($filtros{'-fe'}) ){
-		$emisorIngresado = $filtros{'-fe'}; 
-	}else{
-		$cumplioFiltroEmisor = 1;	
-	}
-
-	if (defined $emisor and defined $emisorIngresado and index($emisor, $emisorIngresado) != -1) {
-	   $cumplioFiltroEmisor = 1; 
-	}
-	return $cumplioFiltroEmisor;
-}
-
-
-sub validarCumplioFiltroGestion
-{
-	my $cumplioFiltroGestion = 0;	
-	my $gestion = $_[0];	
-	my $gestionIngresada;
-	if(exists($filtros{'-fg'}) ){
-		$gestionIngresada = $filtros{'-fg'}; 
-	}else{
-		$cumplioFiltroGestion = 1;	
-	}
-			
-	if (defined $gestion and defined $gestionIngresada and index($gestion, $gestionIngresada) != -1) {
-	   $cumplioFiltroGestion = 1; 
-	}
-	return $cumplioFiltroGestion;
-}
-
-sub validarCumplioFiltroNumeroNorma
-{
-	my $cumplioFiltroNumeroNorma = 0;	
-	my $numero = $_[0];		
-	my $numeroIngresado;
-	if(exists($filtros{'-fn'}) ){
-		$numeroIngresado = $filtros{'-fn'}; 
-	}else{
-		$cumplioFiltroNumeroNorma = 1;	
-	}
-	
-	if (defined $numero and defined $numeroIngresado and index($numero, $numeroIngresado) != -1) {
-	   $cumplioFiltroNumeroNorma = 1; 
-	}
-	return  $cumplioFiltroNumeroNorma;
-}
-
-sub validarCumplioFiltroTipoNorma
-{
-	my $cumplioFiltroTipoNorma = 0;	
-	my $tipoNorma = $_[0];	
-	my $normaIngresada;
-	if(exists($filtros{'-ft'}) ){
-		$normaIngresada = $filtros{'-ft'}; 
-	}else{
-		$cumplioFiltroTipoNorma = 1;	
-	}
-
-	if (defined $tipoNorma and defined $normaIngresada  and index($tipoNorma, $normaIngresada) != -1) {
-	   $cumplioFiltroTipoNorma = 1; 
-	}
-	return $cumplioFiltroTipoNorma;
-}
-
-sub validarCumplioFiltroAnio
-{
-	my $cumplioFiltroAnio = 0;	
-	my $anio = $_[0];		
-	my $anioIngresado; 
-	if(exists($filtros{'-fa'}) ){
-		$anioIngresado = $filtros{'-fa'}; 
-	}else{
-		$cumplioFiltroAnio = 1;
-	}
-
-	if (defined $anio and defined $anioIngresado  and index($anio, $anioIngresado) != -1) {
-	   $cumplioFiltroAnio = 1; 
-	}
-	return $cumplioFiltroAnio;
-}
-
-
-sub imprimirYGrabarResultadosOrdenados(){
-	my $resultadoArchivo;		    
-	print "********Resultados********\n";		
-	foreach my $keyHash (sort{$b cmp $a} keys %contenido_resultados_consola) {
-		my $resultado = $contenido_resultados_consola{$keyHash};
-		print "$resultado\n";
-		if ($pidioGuardar == 1){
-			$resultadoArchivo .= $contenido_resultados_archivo{$keyHash};	
+	my $ruta = $ENV{"MAEDIR"};
+	my $filename = $ruta.'/emisores.mae';
+	open(my $fh, '<:encoding(UTF-8)', $filename)
+	 or die "No se pudo abrir el archivo '$filename' $!";
+		#Leo cada linea 
+		while (my $row = <$fh>) {
+			chomp $row;
+			my @data = split(";",$row);
+			my $descripcion = $data[$posCamposEmisores{'descripcion'}];
+			my $codigo = $data[$posCamposEmisores{'codigo'}];
+			$emisoresDesc{$codigo} = $descripcion;
 		}
-	    }
-	print "**************************\n";
-
-	if($pidioGuardar == 1){
-		grabar($resultadoArchivo);	
-	}	
-
+	close ($fh);
 }
 
-
-sub grabar{
-	my $resultado = $_[0];
-	my $ruta = $ENV{"INFODIR"};
-	my $epoc = time();
-	my $nombreArchivo = $ruta."/resultado_".$epoc;
-	open FILE, ">".$nombreArchivo or die $!; 
-	print FILE $resultado; 
-	close FILE;
-	print "Se generó el archivo $nombreArchivo\n";
-}
-
-sub obtenerNombreDeFecha{
-	my $fecha = $_[0]; 
-	my @data = split("/",$fecha);
-	my $nombre = $data[2].$data[1].$data[0];
-	return $nombre;
-}
-
-
-sub obtenerPeso{
-	my $causal = $_[0];
-	my $extracto = $_[1];
-	my $palabraClave = $_[2];
-	my $contadorCausal = () = $causal =~ /$palabraClave/g;
-	my $contadorExtracto = () = $extracto =~ /$palabraClave/g;
-	my $peso = $contadorCausal*10+$contadorExtracto;
-	return $peso;
-}
-
-sub cargarFiltrosYValidarGuardar{
+sub cargarFiltrosYValidarGuardar
+{
 	#Cargamos los filtros
 	my $i = 1;
 	while($i < $#ARGV){
@@ -401,47 +342,252 @@ sub cargarFiltrosYValidarGuardar{
 
 }
 
+
+
+#*************METODOS VALIDADORES DE COINCIDENCIAS***************************************
+
+sub validarCumplioFiltroEmisor
+{
+	my $cumplioFiltroEmisor = 0;	
+	my $emisor = $_[0];	
+	my $emisorIngresado;
+	if(exists($filtros{'-fe'}) ){
+		#El usuario ingreso la descripcion, buscamos el codigo para validar en registros.
+		#my $emisorDesc = $filtros{'-fe'};
+		#$emisorIngresado = $descripcionFiltros{$emisorDesc};
+		$emisorIngresado = $filtros{'-fe'};  
+	}else{
+		$cumplioFiltroEmisor = 1;	
+	}
+
+	if (defined $emisor and defined $emisorIngresado and index($emisor, $emisorIngresado) != -1) {
+	   $cumplioFiltroEmisor = 1; 
+	}
+	return $cumplioFiltroEmisor;
+}
+
+
+sub validarCumplioFiltroGestion
+{
+	my $cumplioFiltroGestion = 0;	
+	my $gestion = $_[0];	
+	my $gestionIngresada;
+	if(exists($filtros{'-fg'}) ){
+		#El usuario ingreso la descripcion, buscamos el codigo para validar en registros.
+		#my $gestionDesc = $filtros{'-fg'};
+		#$gestionIngresada = $descripcionFiltros{$gestionDesc}; 
+		$gestionIngresada = $filtros{'-fg'};
+	}else{
+		$cumplioFiltroGestion = 1;	
+	}
+			
+	if (defined $gestion and defined $gestionIngresada and index(lc($gestion), lc($gestionIngresada)) != -1) {
+	   $cumplioFiltroGestion = 1; 
+	}
+	return $cumplioFiltroGestion;
+}
+
+sub validarCumplioFiltroNumeroNorma
+{
+	my $cumplioFiltroNumeroNorma = 0;	
+	my $numero = $_[0];		
+	my $numeroIngresado;
+	if(exists($filtros{'-fn'}) ){
+		$numeroIngresado = $filtros{'-fn'}; 
+	}else{
+		$cumplioFiltroNumeroNorma = 1;	
+	}
+	
+	if (defined $numero and defined $numeroIngresado and ($numero eq $numeroIngresado)) {
+	   $cumplioFiltroNumeroNorma = 1; 
+	}
+	return  $cumplioFiltroNumeroNorma;
+}
+
+sub validarCumplioFiltroTipoNorma
+{
+	my $cumplioFiltroTipoNorma = 0;	
+	my $tipoNorma = $_[0];	
+	my $normaIngresada;
+	if(exists($filtros{'-ft'}) ){
+		#El usuario ingreso la descripcion, buscamos el codigo para validar en registros.
+		#my $normaDesc = $filtros{'-ft'};
+		#$normaIngresada = $descripcionFiltros{$normaDesc}; 
+		$normaIngresada = $filtros{'-ft'};
+	}else{
+		$cumplioFiltroTipoNorma = 1;	
+	}
+
+	if (defined $tipoNorma and defined $normaIngresada  and (lc($tipoNorma) eq lc($normaIngresada))) {
+	   $cumplioFiltroTipoNorma = 1; 
+	}
+	return $cumplioFiltroTipoNorma;
+}
+
+sub validarCumplioFiltroAnio
+{
+	my $cumplioFiltroAnio = 0;	
+	my $anio = $_[0];		
+	my $anioIngresado; 
+	if(exists($filtros{'-fa'}) ){
+		$anioIngresado = $filtros{'-fa'}; 
+	}else{
+		$cumplioFiltroAnio = 1;
+	}
+
+	if (defined $anio and defined $anioIngresado  and ($anio eq $anioIngresado)) {
+	   $cumplioFiltroAnio = 1; 
+	}
+	return $cumplioFiltroAnio;
+}
+#*******************************************************************************
+
+sub imprimirYGrabarResultadosOrdenados()
+{
+	my $resultadoArchivo;		    
+	print "********Resultados********\n";		
+	foreach my $keyHash (sort{$b cmp $a} keys %contenido_resultados_consola) {
+		my $resultado = $contenido_resultados_consola{$keyHash};
+		print "$resultado\n";
+		if ($pidioGuardar == 1){
+			$resultadoArchivo .= $contenido_resultados_archivo{$keyHash};	
+		}
+	    }
+	print "**************************\n";
+
+	if($pidioGuardar == 1){
+		grabar($resultadoArchivo);	
+	}	
+
+}
+
+
+sub grabar
+{
+	my $resultado = $_[0];
+	my $ruta = $ENV{"INFODIR"};
+	my $epoc = time();
+	my $nombreArchivo = $ruta."/resultado_".$epoc;
+	open FILE, ">".$nombreArchivo or die $!; 
+	print FILE $resultado; 
+	close FILE;
+	print "Se generó el archivo $nombreArchivo\n";
+}
+
+#*************************METODOS AUXILIARES PARA OBTENCION DE DATOS********************
+sub obtenerCodigoGestion
+{
+	my $gestionBuscada = $_[0];
+	my $ruta = $ENV{"MAEDIR"};
+	my $filename = $ruta.'/gestiones.mae';
+	open(my $fh, '<:encoding(UTF-8)', $filename)
+	 or die "No se pudo abrir el archivo '$filename' $!";
+		#Leo cada linea 
+		while (my $row = <$fh>) {
+			chomp $row;
+			my @data = split(";",$row);
+			my $descripcion = $data[$posCamposGestiones{'descripcion'}];
+			if (defined $descripcion and defined $gestionBuscada and index($descripcion, $gestionBuscada) != -1){
+				return  $data[$posCamposGestiones{'codigo'}];
+			}
+		}
+	close($fh);
+}
+
+sub obtenerCodigoEmisor
+{
+	my $emisorBuscado = $_[0];
+	my $ruta = $ENV{"MAEDIR"};
+	my $filename = $ruta.'/emisores.mae';
+	open(my $fh, '<:encoding(UTF-8)', $filename)
+	 or die "No se pudo abrir el archivo '$filename' $!";
+		#Leo cada linea 
+		while (my $row = <$fh>) {
+			chomp $row;
+			my @data = split(";",$row);
+			my $descripcion = $data[$posCamposEmisores{'descripcion'}];
+			if (defined $descripcion and defined $emisorBuscado and ($descripcion eq $emisorBuscado) ){
+				return  $data[$posCamposEmisores{'codigo'}];
+			}
+		}
+	close($fh);
+}
+
+
+sub obtenerCodigoNorma
+{
+	my $normaBuscada = $_[0];
+	my $ruta = $ENV{"MAEDIR"};
+	my $filename = $ruta.'/normas.mae';
+	open(my $fh, '<:encoding(UTF-8)', $filename)
+	 or die "No se pudo abrir el archivo '$filename' $!";
+		#Leo cada linea 
+		while (my $row = <$fh>) {
+			chomp $row;
+			my @data = split(";",$row);
+			my $descripcion = $data[$posCamposNormas{'descripcion'}];
+			if (defined $descripcion and defined $normaBuscada and ($descripcion eq $normaBuscada)){
+				my $codigoNorma = $posCamposNormas{'codigo'};				
+				print "Codigo norma: $codigoNorma \n";
+				return $data[$posCamposNormas{'codigo'}];
+			}
+		}
+	close ($fh);
+}
+
+sub obtenerNombreDeFecha
+{
+	my $fecha = $_[0]; 
+	my @data = split("/",$fecha);
+	my $nombre = $data[2].$data[1].$data[0];
+	return $nombre;
+}
+
+
+sub obtenerPeso
+{
+	my $causal = $_[0];
+	my $extracto = $_[1];
+	my $palabraClave = $_[2];
+	my $contadorCausal = () = $causal =~ /$palabraClave/g;
+	my $contadorExtracto = () = $extracto =~ /$palabraClave/g;
+	my $peso = $contadorCausal*10+$contadorExtracto;
+	return $peso;
+}
+#*********************************************************************************************
+
+
 sub imprimirFiltros
 {
-	print "Palabra clave: $palabraClave \n";	
+	print "Consulta ingresada: \n";		
+	if(defined $palabraClave){
+		print "Palabra clave: $palabraClave \n";		
+	}	
+
 	foreach my $name (keys %filtros) {
 	    	printf "%-8s %s\n", $name, $filtros{$name};
 	}
 }
 
-sub informar{
-	my $ruta = $ENV{"INFODIR"};
-	print "Ruta de Informar $ruta \n";
-	#Si pasaron la lista de archivos
-	if($#ARGV > 1) 
-	{
-		my $i = 1;
-		while($i < $#ARGV){
-			my $file = $ARGV[$i];
-			buscarEnArchivo($file,$ruta);
-		}	
-		
-	}else{
-		opendir (DIR, $ruta) or die $!;
-		#Leo cada archivo
-		while (my $file = readdir(DIR)) {
-			buscarEnArchivo($file,$ruta);		
-	   	 }
-
-    		closedir(DIR);
+sub imprimirEmisores
+{
+	print "Maestro Emisores: \n";	
+	foreach my $name (keys %emisoresDesc) {
+	    	printf "%-8s %s\n", $name, $emisoresDesc{$name};
 	}
-
-	imprimirYGrabarResultadosOrdenados();
-	
 }
 
-sub menuFiltros{
+
+sub menuFiltros
+{
+	
 	my $input = '';
 
-	while ($input ne '8')
+	while ($input ne '10')
 	{
 	    #clear_screen();
- 
+	    print " \n";
+ 	    print "************MENÚ************ \n";		
 	    print "1. Ingresar palabra clave\n".
 		  "2. Filtrar por tipo de norma\n".
 		  "3. Filtrar por año [año o año desde-año hasta]\n". 
@@ -449,7 +595,9 @@ sub menuFiltros{
 		  "5. Filtrar por gestión\n". 
 		  "6. Filtrar por emisor\n".
 		  "7. Ejecutar consulta\n".
-		  "8. Salir\n";
+		  "8. Mostrar consulta\n".
+		  "9. Limpiar consulta\n".
+		 "10. Salir\n";
 
 	    print "Ingrese su opción: ";
 	    $input = <STDIN>;
@@ -463,7 +611,8 @@ sub menuFiltros{
 		    print "Ingrese palabra clave: ";
 		    my $palabra = <STDIN>;
 		    chomp($palabra);
-		    $palabraClave = $palabra;		
+		    $palabraClave = $palabra;	
+		    $sinPalabraClave = 0;	
 		    $input = '';
 
 		}
@@ -473,7 +622,9 @@ sub menuFiltros{
 		    print "Ingrese el tipo de norma: ";
 		    my $tipo = <STDIN>;
 		    chomp($tipo);
-		    $filtros{"-ft"} = $tipo;		
+		    $filtros{"-ft"} = $tipo;	
+		    #Para la busqueda por descripcion
+		    #$descripcionFiltros{$tipo} = obtenerCodigoNorma($tipo);			
 		    $input = ''; 
 		}
 
@@ -500,7 +651,9 @@ sub menuFiltros{
 		    print "Ingrese la gestión: ";
 		    my $gestion = <STDIN>;
 		    chomp($gestion);
-		    $filtros{"-fg"} = $gestion;		
+		    $filtros{"-fg"} = $gestion;
+		    #Para la busqueda por descripcion	
+		    #$descripcionFiltros{$gestion} = obtenerCodigoGestion($gestion);		
 		    $input = '';
 		}
 
@@ -509,7 +662,9 @@ sub menuFiltros{
 		    print "Ingrese el emisor: ";
 		    my $emisor = <STDIN>;
 		    chomp($emisor);
-		    $filtros{"-fe"} = $emisor;		
+		    $filtros{"-fe"} = $emisor;	
+		    #Para la busqueda por descripcion
+		    #$descripcionFiltros{$emisor} = obtenerCodigoEmisor($emisor);		
 		    $input = '';
 		}
 
@@ -518,21 +673,43 @@ sub menuFiltros{
 			
 			my $cantFiltrosCargados = keys %filtros;
 			if($cantFiltrosCargados > 0){
+				my $opcion=$ARGV[0];
 				imprimirFiltros();
-				leerTodosArchivosSubdirectorios();		   
+				if($opcion eq "-c"){
+					leerTodosArchivosSubdirectorios();		   
+				}
+				if($opcion eq "-i"){
+					leerArchivosSubdirectoriosResultados();
+				}				
+
 			}else{
 				print "Debe realizar al menos un filtro. \n";
 			}
-			%contenido_resultados_archivo = ();			
-			%contenido_resultados_consola = ();			
+			
+			limpiarMapas();			
 			
 		   #ejecutarConsulta();
+		}
+		case '8'
+		{
+		    imprimirFiltros();
+		}
+		case '9'
+		{
+		    %filtros = ();
 		}
 
 	    }#del switch
 	}#del while
 
 	exit(0);
+}
+
+sub limpiarMapas(){
+	%contenido_resultados_archivo = ();			
+	%contenido_resultados_consola = ();
+	#%filtros = ();
+	#%descripcionFiltros = ();	
 }
 
 sub clear_screen
