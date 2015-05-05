@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Command name (para pasarle a Glog)
 cmdName="RecPro"
 
