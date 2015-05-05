@@ -390,16 +390,22 @@ sub validarCumplioFiltroGestion
 sub validarCumplioFiltroNumeroNorma
 {
 	my $cumplioFiltroNumeroNorma = 0;	
-	my $numero = $_[0];		
-	my $numeroIngresado;
+	my $numero = int ($_[0]);
+	my $rangoIngresado;
 	if(exists($filtros{'-fn'}) ){
-		$numeroIngresado = $filtros{'-fn'}; 
+		$rangoIngresado = $filtros{'-fn'}; 
 	}else{
 		$cumplioFiltroNumeroNorma = 1;	
 	}
 	
-	if (defined $numero and defined $numeroIngresado and ($numero eq $numeroIngresado)) {
-	   $cumplioFiltroNumeroNorma = 1; 
+	if (defined $numero and defined $rangoIngresado) {
+	   my @numeros = split("-",$rangoIngresado); 
+	   my $fechaDesde = $numeros[0];
+	   my $fechaHasta = $numeros[1]; 
+	   if ($numero >= $fechaDesde and $numero <= $fechaHasta){
+		$cumplioFiltroNumeroNorma = 1; 
+	    }
+	   
 	}
 	return  $cumplioFiltroNumeroNorma;
 }
@@ -428,15 +434,20 @@ sub validarCumplioFiltroAnio
 {
 	my $cumplioFiltroAnio = 0;	
 	my $anio = $_[0];		
-	my $anioIngresado; 
+	my $rangoIngresado; 
 	if(exists($filtros{'-fa'}) ){
-		$anioIngresado = $filtros{'-fa'}; 
+		$rangoIngresado = $filtros{'-fa'}; 
 	}else{
 		$cumplioFiltroAnio = 1;
 	}
 
-	if (defined $anio and defined $anioIngresado  and ($anio eq $anioIngresado)) {
-	   $cumplioFiltroAnio = 1; 
+	if (defined $anio and defined $rangoIngresado) {
+		my @anios = split("-",$rangoIngresado); 
+		my $anioDesde = $anios[0];
+		my $anioHasta = $anios[1]; 
+		if ($anio >= $anioDesde and $anio <= $anioHasta){
+			$cumplioFiltroAnio = 1; 
+		}
 	}
 	return $cumplioFiltroAnio;
 }
@@ -590,8 +601,8 @@ sub menuFiltros
  	    print "************MENÚ************ \n";		
 	    print "1. Ingresar palabra clave\n".
 		  "2. Filtrar por tipo de norma\n".
-		  "3. Filtrar por año [año o año desde-año hasta]\n". 
-		  "4. Filtrar por numero de norma [norma o norma desde-norma hasta]\n". 
+		  "3. Filtrar por año\n". 
+		  "4. Filtrar por numero de norma\n". 
 		  "5. Filtrar por gestión\n". 
 		  "6. Filtrar por emisor\n".
 		  "7. Ejecutar consulta\n".
@@ -630,19 +641,25 @@ sub menuFiltros
 
 		case '3'
 		{
-		    print "Ingrese el año o rango: ";
-		    my $anio = <STDIN>;
-		    chomp($anio);
-		    $filtros{"-fa"} = $anio;		
+		    print "Ingrese Año Desde: ";
+		    my $anioDesde = <STDIN>;
+		    chomp($anioDesde);
+		    print "Ingrese Año Hasta: ";
+		    my $anioHasta = <STDIN>;
+		    chomp($anioHasta);
+		    $filtros{"-fa"} = $anioDesde."-".$anioHasta;		
 		    $input = '';
 		}
 
 		case '4'
 		{
-		    print "Ingrese el número o rango: ";
-		    my $numero = <STDIN>;
-		    chomp($numero);
-		    $filtros{"-fn"} = $numero;		
+		    print "Ingrese Número Desde: ";
+		    my $numeroDesde = <STDIN>;
+		    chomp($numeroDesde);
+		    print "Ingrese Número Hasta: ";
+		    my $numeroHasta = <STDIN>;
+		    chomp($numeroHasta);
+		    $filtros{"-fn"} = $numeroDesde."-".$numeroHasta;		
 		    $input = '';
 		}
 
@@ -687,8 +704,6 @@ sub menuFiltros
 			}
 			
 			limpiarMapas();			
-			
-		   #ejecutarConsulta();
 		}
 		case '8'
 		{
