@@ -143,7 +143,7 @@ sub validarPalabraClaveYGuardar
 
 sub leerArchivosSubdirectoriosResultados
 {
-	my $ruta = $ENV{"INFODIR"};
+	my $ruta = $ENV{"GRUPO"}.'/'.$ENV{"INFODIR"};
 	print "Ruta de Informar $ruta \n";
 	#Si pasaron la lista de archivos
 	if($#ARGV > 1) 
@@ -169,7 +169,7 @@ sub leerArchivosSubdirectoriosResultados
 
 sub leerTodosArchivosSubdirectorios
 {
-	my $dir = $ENV{"PROCDIR"};
+	my $dir = $ENV{"GRUPO"}.'/'.$ENV{"PROCDIR"};
 	my $DIR;
 	# Leo el directorio raiz
 	opendir $DIR, $dir or die "opendir $dir - $!";
@@ -299,7 +299,7 @@ sub buscarEnArchivo
 #**************************METODS PARA CARGAS INICIALES ***********************************
 sub cargarMapaEmisores
 {
-	my $ruta = $ENV{"MAEDIR"};
+	my $ruta = $ENV{"GRUPO"}.'/'.$ENV{"MAEDIR"};
 	my $filename = $ruta.'/emisores.mae';
 	open(my $fh, '<:encoding(UTF-8)', $filename)
 	 or die "No se pudo abrir el archivo '$filename' $!";
@@ -476,7 +476,7 @@ sub imprimirYGrabarResultadosOrdenados()
 sub grabar
 {
 	my $resultado = $_[0];
-	my $ruta = $ENV{"INFODIR"};
+	my $ruta = $ENV{"GRUPO"}.'/'.$ENV{"INFODIR"};
 	my $epoc = time();
 	my $nombreArchivo = $ruta."/resultado_".$epoc;
 	open FILE, ">".$nombreArchivo or die $!; 
@@ -489,7 +489,7 @@ sub grabar
 sub obtenerCodigoGestion
 {
 	my $gestionBuscada = $_[0];
-	my $ruta = $ENV{"MAEDIR"};
+	my $ruta = $ENV{"GRUPO"}.'/'.$ENV{"MAEDIR"};
 	my $filename = $ruta.'/gestiones.mae';
 	open(my $fh, '<:encoding(UTF-8)', $filename)
 	 or die "No se pudo abrir el archivo '$filename' $!";
@@ -508,7 +508,7 @@ sub obtenerCodigoGestion
 sub obtenerCodigoEmisor
 {
 	my $emisorBuscado = $_[0];
-	my $ruta = $ENV{"MAEDIR"};
+	my $ruta = $ENV{"GRUPO"}.'/'.$ENV{"MAEDIR"};
 	my $filename = $ruta.'/emisores.mae';
 	open(my $fh, '<:encoding(UTF-8)', $filename)
 	 or die "No se pudo abrir el archivo '$filename' $!";
@@ -528,7 +528,7 @@ sub obtenerCodigoEmisor
 sub obtenerCodigoNorma
 {
 	my $normaBuscada = $_[0];
-	my $ruta = $ENV{"MAEDIR"};
+	my $ruta = $ENV{"GRUPO"}.'/'.$ENV{"MAEDIR"};
 	my $filename = $ruta.'/normas.mae';
 	open(my $fh, '<:encoding(UTF-8)', $filename)
 	 or die "No se pudo abrir el archivo '$filename' $!";
