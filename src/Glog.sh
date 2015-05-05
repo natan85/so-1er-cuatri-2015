@@ -122,7 +122,7 @@ then
 	echo "$fecha-$usuario-$comando-$codigo-$mensaje" >> "$archivo"
 	
 	# mostrar por pantalla
-	#echo "[Glog] Archivo ${archivo##*/} excedido, se recorto"
+	echo "[Glog] Archivo ${archivo##*/} excedido, se recorto"
 fi
 
 exit 0
