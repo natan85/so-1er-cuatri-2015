@@ -4,7 +4,6 @@
 # Validaciones de argumentos
 #
 
-# Leer de variables de ambiente GRUPO/XXX cuando se tenga
 grupo="$GRUPO"
 src="$grupo/src"
 acepdir="$grupo/$ACEPDIR"
@@ -169,7 +168,7 @@ function validarArchivo {
 
 		$Glog "$nomCom" "Se rechaza el archivo por estar DUPLICADO." "ERROR"
 
-		$Mover $archivo "$rechdir/$filename" "ProPro"
+		$Mover $archivo "$rechdir" "ProPro"
 		continue
 	fi
 
@@ -182,7 +181,7 @@ function validarArchivo {
 
 		$Glog "$nomCom" "Se rechaza el archivo. Emisor no habilitado en este tipo de norma" "ERROR"
 
-		$Mover $archivo "$rechdir/$filename" "ProPro"
+		$Mover $archivo "$rechdir" "ProPro"
 		continue
 	fi
 	cantAceptados=$((cantAceptados + 1))
@@ -390,7 +389,7 @@ function procesarArchivos {
 			procesarRegistro
 		fi
 	
-		$Mover $archivo "$procdir/proc/$filename" "ProPro"
+		$Mover $archivo "$procdir/proc" "ProPro"
 	done
 
 	$Glog "$nomCom" "Cantidad de archivos procesados: $cantAceptados" "INFO"

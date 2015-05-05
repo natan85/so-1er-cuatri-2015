@@ -1,3 +1,4 @@
+#!/bin/bash
 # *******************************************************************
 # *******************************************************************
 # Sistemas Operativos - 1er cuat 2015
@@ -17,12 +18,10 @@
 # *******************************************************************
 # *******************************************************************
 # Ejemplos de uso:
-# ./Mover.sh "$archivo" "$rechdir" "ProPro"
-# ./Mover.sh "$archivo" "$acepdir" "ProPro"
+# bin/Mover.sh "$archivo" "$rechdir" "ProPro"
+# bin/Mover.sh "$archivo" "$acepdir" "ProPro"
 # *******************************************************************
 # *******************************************************************
-
-#!/bin/bash
 
 # ***************************************************
 # Definiciones
@@ -68,7 +67,7 @@ fi
 # verificar el archivo a mover
 if [ ! -e "$archivo" ]
 then
-	./Glog.sh "$comando"  "El archivo $archivo no existe" "ERR"
+	"$GRUPO/$BINDIR/Glog.sh" "$comando"  "El archivo $archivo no existe" "ERR"
 	echo "[Mover] Error: el archivo $archivo no existe"
 	exit 1
 fi
@@ -76,7 +75,7 @@ fi
 # verificar el directorio de destino
 if [ ! -d "$destino" ]
 then
-	./Glog.sh "$comando"  "El directorio $destino no existe" "ERR"
+	"$GRUPO/$BINDIR/Glog.sh" "$comando"  "El directorio $destino no existe" "ERR"
 	echo "[Mover] Error: el directorio $destino no existe"
 	exit 1
 fi
@@ -87,7 +86,7 @@ origen="${archivo%/*}"   # path del archivo (sin el nombre)
 
 if [ "$origen" == "$destino" ]
 then
-	./Glog.sh "$comando" "Directorios de origen y destino son iguales" "ERR"
+	"$GRUPO/$BINDIR/Glog.sh" "$comando" "Directorios de origen y destino son iguales" "ERR"
 	echo "[Mover] Error: los directorios de origen y destino son iguales"
 	exit 1
 fi
@@ -104,7 +103,7 @@ duplicados="$GRUPO/$DUPDIR"    # path del directorio de duplicados
 if ! [ -d $duplicados ]
 then
 	mkdir $duplicados
-	./Glog.sh "$comando" "Fue creado el directorio $duplicados" "WAR"
+	"$GRUPO/$BINDIR/Glog.sh" "$comando" "Fue creado el directorio $duplicados" "WAR"
 	echo "[Mover] Fue creado el directorio $duplicados"
 fi
 
@@ -129,7 +128,7 @@ then
 	mv -f $destino/$nombre $duplicados/$numerado
 	
 	# escribir en el log y mostrar por pantalla
-	./Glog.sh "$comando" "Archivo duplicado $numerado movido a $DUPDIR" "INFO"
+	"$GRUPO/$BINDIR/Glog.sh" "$comando" "Archivo duplicado $numerado movido a $DUPDIR" "INFO"
 	echo "[Mover] Archivo duplicado $numerado movido a $DUPDIR"
 fi
 
@@ -140,7 +139,7 @@ mv -f "$archivo" "$destino/$nombre"
 
 # escribir en el log
 destino="${destino##*/}"  # nombre del directorio (sin el path)
-./Glog.sh "$comando" "Archivo $nombre movido al directorio $destino" "INFO"
+"$GRUPO/$BINDIR/Glog.sh" "$comando" "Archivo $nombre movido al directorio $destino" "INFO"
 
 # mostrar por pantalla
 echo "[Mover] Archivo $nombre movido al directorio $destino"
