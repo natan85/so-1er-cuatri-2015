@@ -225,16 +225,14 @@ function llamarAProPro {
 	if [ ! -n "$proproCorriendo" ]
 	then
 		# Modificar para que se llame con Start
-		$propro
-		proproCorriendo=$(pgrep "ProPro")
-		$glog $cmdName "ProPro corriendo bajo el no.: $proproCorriendo" "INFO"
+		. "$GRUPO/$BINDIR/Start.sh" "RecPro.sh"
 	else
 		$glog $cmdName "Invocación de ProPro pospuesta para el siguiente ciclo" "INFO"
 	fi
 }
 
 function procesarArchivosPendientes {	
-	pendientes=$($acepdir/*)
+	pendientes=($acepdir/*)
 	if [ ${#pendientes[@]} -ne 0 ]
 	then
 		checkearArchivosAcepdir "$acepdir"
