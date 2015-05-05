@@ -103,7 +103,7 @@ echo "$fecha-$usuario-$comando-$codigo-$mensaje" >> "$archivo"
 tamanio=$(stat -c %s "$archivo")
 
 # recortar archivo si excedio el tamanio maximo
-if [ $tamanio -gt $LOGSIZE ];
+if [ $tamanio -gt $LOGSIZE ]  && [ $comando != "IniPro" ];
 then
 	# copiar las utimas lineas en un archivo temporal
 	cat "$archivo" | tail -n $LINEAS > "$archivo.tmp";
