@@ -200,7 +200,7 @@ function checkearArchivosAcepdir {
 			do
 				if [ -f "$entry/$file" ]
 				then
-					hayArchivos=true
+					hayArchivos=true			
 				fi
 				if [ $hayArchivos ]
 				then
@@ -224,8 +224,8 @@ function llamarAProPro {
 	proproCorriendo=$(pgrep "ProPro")
 	if [ ! -n "$proproCorriendo" ]
 	then
-		# Modificar para que se llame con Start
-		. "$GRUPO/$BINDIR/Start.sh" "RecPro.sh"
+
+		"$GRUPO/$BINDIR/ProPro.sh"
 	else
 		$glog $cmdName "Invocación de ProPro pospuesta para el siguiente ciclo" "INFO"
 	fi
