@@ -29,11 +29,13 @@ c) Ejecute el comando:
 
 d) Siga los pasos de instalación del programa. El mismo le informará cuando se haya terminado la instalación y los posibles errores, si los hubiera
 
-***************************************
-           POST-INSTALACIÓN
-***************************************
 
+Supuestos:
 
+Se tienen permisos escritura sobre el path donde se encuentra.
+Las distintas rutas configuradas durante la instalacion deben corresponder a directorios inexistentes.
+
+Resultado:
 
 La instalación creará los siguientes directorios:
 
@@ -56,6 +58,7 @@ Dentro del directorio conf habrá 2 archivos:
 
 	- InsPro.conf, que tendrá las variables de ambiente del programa
 	- InsPro.log, que tendrá el log de instalación
+
 
 ***************************************
  PRIMEROS PASOS PARA CORRER EL PAQUETE
