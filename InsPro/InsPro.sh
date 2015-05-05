@@ -97,13 +97,13 @@ function terminosCondiciones() {
     echo "* todo de acuerdo  con los términos y condiciones del \"ACUERDO DE         *"
     echo "* LICENCIA DE SOFTWARE\" incluido en este paquete.                         *"
     echo "***************************************************************************"
-    echoAndLog $MSGINFO "Acepta? (s/n): "
+    echoAndLog $MSGINFO "Acepta? (Si/No): "
 
     read respuesta
 
     loguear $MSGINFO "$respuesta"
         
-    if [ "$respuesta" = "" ] || [ `toLower $respuesta` != "s" ]; then
+    if [ "$respuesta" = "" ] || [ `toLower $respuesta` != "si" ]; then
         echoAndLog $MSGINFO "Instalacion Cancelada"
         exit 1
     fi
@@ -138,7 +138,7 @@ function mensajesInformativos() {
 function definirDirBinarios() {
     isOk=0
     while [ "$isOk" -eq 0 ]; do
-        echoAndLog $MSGINFO "Ingrese el nombre del directorio de ejecutables ($BINDIR):"
+        echoAndLog $MSGINFO "Defina el directorio de instalacion de los ejecutables ($BINDIR):"
         read dirBin
         if [ ! -z "$dirBin" ]; then
             value=`echo $dirBin | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
@@ -158,7 +158,7 @@ function definirDirBinarios() {
 function definirDirMae() {
     isOk=0
     while [ "$isOk" -eq 0 ]; do
-        echoAndLog $MSGINFO "Ingrese el nombre del directorio para maestros y tablas ($MAEDIR):"
+        echoAndLog $MSGINFO "Defina el directorio para maestros y tablas ($MAEDIR):"
         read dirMae
         if [ ! -z "$dirMae" ]; then
             value=`echo $dirMae | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
@@ -179,7 +179,7 @@ function definirDirMae() {
 function definirDirNovedades() {
     isOk=0
     while [ "$isOk" -eq 0 ]; do
-        echoAndLog $MSGINFO "Ingrese el nombre del directorio de arribo de novedades ($NOVEDIR):"
+        echoAndLog $MSGINFO "Defina en directorio de recepcion de documentos Protocolizados ($NOVEDIR):"
         read dirnovedades
         if [ ! -z "$dirnovedades" ]; then
             value=`echo $dirnovedades | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
@@ -201,7 +201,7 @@ function definirDirNovedades() {
     while [ $freeSize -lt $DATASIZE ]; do
         isOk=0
         while [ "$isOk" -eq 0 ]; do    
-            echoAndLog $MSGINFO "Ingrese el espacio minimo requerido para el arribo de novedades en MB ($DATASIZE):"
+            echoAndLog $MSGINFO "Defina el espacio minimo libre para el arribo de estas novedades en Mbytes ($DATASIZE):"
             read dataSize
             if [ ! -z $dataSize ]; then
                 value=`echo $dataSize | grep "^[0-9]\+$"`
@@ -221,7 +221,9 @@ function definirDirNovedades() {
         freeSize=`df $GRUPO | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 4`
         let freeSize=$freeSize/1024
         if [ $freeSize -lt $DATASIZE ]; then
-            echoAndLog $MSGERR "Insuficiente espacio en disco. Espacio disponible: $freeSize MB. Espacio requerido $DATASIZE MB"
+            echoAndLog $MSGERR "Insuficiente espacio en disco."
+            echoAndLog $MSGERR  "Espacio disponible: $freeSize MB."
+            echoAndLog $MSGERR "Espacio requerido $DATASIZE MB."
         echo ""
         fi
     done
@@ -273,7 +275,7 @@ function definirDirInformes() {
 function definirDirLog() {
     isOk=0
     while [ "$isOk" -eq 0 ]; do
-        echoAndLog $MSGINFO "Ingrese el nombre del directorio de log ($LOGDIR):"
+        echoAndLog $MSGINFO "Defina el nombre del directorio de log ($LOGDIR):"
         read dirLog
         if [ ! -z "$dirLog" ]; then
             value=`echo $dirLog | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
@@ -293,7 +295,7 @@ function definirDirLog() {
     #Tamaño maximo para archivos de log
     isOk=0
     while [ "$isOk" -eq 0 ]; do    
-    echoAndLog $MSGINFO "Ingrese el tamaño máximo para los archivos de log en bytes ($LOGSIZE):"
+    echoAndLog $MSGINFO "Defina el tamaño máximo para los archivos de log en bytes ($LOGSIZE):"
     read logSize
     if [ ! -z $logSize ]; then
         value=`echo $logSize | grep "^[0-9]\+$"`
@@ -355,7 +357,7 @@ function definirDirProtocolizados() {
 function definirDirDuplicados() {
     isOk=0
     while [ "$isOk" -eq 0 ]; do
-        echoAndLog $MSGINFO "Ingrese el nombre de grabacion de Archivos Duplicados ($DUPDIR):"
+        echoAndLog $MSGINFO "Defina el nombre para ek repositorio de Archivos Duplicados ($DUPDIR):"
         read dirDup
         if [ ! -z "$dirDup" ]; then
             value=`echo $dirDup | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
@@ -423,9 +425,6 @@ function crearDirectorios() {
     crearDirectorio 755 "$GRUPO/$ACEPDIR"
     crearDirectorio 755 "$GRUPO/$INFODIR"
     crearDirectorio 755 "$GRUPO/$RECHDIR"
-    crearDirectorio 755 "$GRUPO/$PROCDIR"
-    crearDirectorio 755 "$GRUPO/$PROCDIR"
-    crearDirectorio 755 "$GRUPO/$PROCDIR"
     crearDirectorio 755 "$GRUPO/$PROCDIR"
     crearDirectorio 755 "$GRUPO/$PROCDIR/proc"
     crearDirectorio 755 "$GRUPO/$DUPDIR"
@@ -514,7 +513,7 @@ function guardarConfiguracion() {
 }
 
 
-#Funcion que detecta si estan todos los componentes instalados
+#Funcion que detecta si estan todos los componentes instalados (Archivos)
 #Return Codes:
 #     0: Instalacion completa
 #     1: Ningun componente instalado
@@ -565,7 +564,8 @@ function detectarInstalacion {
 
     return $status
 }
-
+###############################################################################
+# muestra  los componentes instalados y no instalados
 function mostrarComponentesInstalados() {
     detectarInstalacion
 
@@ -642,6 +642,6 @@ moverArchivos
 guardarConfiguracion
 mostrarComponentesInstalados
 echo "********************************************************" 
-echoAndLog $MSGINFO "Instalacion CONCLUIDA"
+echoAndLog $MSGINFO "Instalacion COMPLETA"
 echo "********************************************************" 
 exit $?
