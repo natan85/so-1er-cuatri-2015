@@ -23,7 +23,7 @@ BINDIR="bin"
 NOVEDIR="novedades"
 DATASIZE=100 #MB
 LOGDIR="log"
-LOGSIZE=400 #KB
+LOGSIZE=400000 #bytes
 LOGFILE="$CONFDIR/InsPro.log"
 CONFFILE="$CONFDIR/InsPro.conf"
 ACEPDIR="a_protocolizar"
@@ -293,7 +293,7 @@ function definirDirLog() {
     #Tamaño maximo para archivos de log
     isOk=0
     while [ "$isOk" -eq 0 ]; do    
-    echoAndLog $MSGINFO "Ingrese el tamaño máximo para los archivos de log en KB ($LOGSIZE):"
+    echoAndLog $MSGINFO "Ingrese el tamaño máximo para los archivos de log en bytes ($LOGSIZE):"
     read logSize
     if [ ! -z $logSize ]; then
         value=`echo $logSize | grep "^[0-9]\+$"`

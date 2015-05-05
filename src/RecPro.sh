@@ -1,17 +1,20 @@
 # Command name (para pasarle a Glog)
 cmdName="RecPro"
 
-# Variable que guarda el path al root de la aplicación (reemplazar con /bin cuando se pongan todos en bin)
-grupo="/home/bliberini/TP/so-1er-cuatri-2015"
+# Variable que guarda el path al root de la aplicación
+grupo="$GRUPO"
 
-# Variable que guarda el path a NOVEDIR (reemplazar con la que se obtiene de configuración)
-novedir="$grupo/noveDirMock"
+# Variable que guarda el path a NOVEDIR
+novedir="$GRUPO/$NOVEDIR"
 
-# Variable que guarda el path a ACEPDIR (reemplazar con la que se obtiene de configuración)
-acepdir="$grupo/acepDirMock"
+# Variable que guarda el path a ACEPDIR
+acepdir="$GRUPO/$ACEPDIR"
 
-# Variable que guarda el path a Glog (reemplazar con ./Glog.sh cuando se pongan todos en /bin)
-glog="$grupo/Glog/Glog.sh"
+# Variable que guarda el path a Glog
+glog="$GRUPO/$BINDIR/Glog.sh"
+
+# Variable que guarda el path a Mover
+mover="$GRUPO/$BINDIR/Mover.sh"
 
 # Variable de tiempo de espera hasta volver a ejecutarse (segundos)
 sleepTime=30
@@ -19,14 +22,14 @@ sleepTime=30
 # Variable que mantiene contador de ciclos de ejecución
 timesExe=0
 
-# Variable que guarda la dirección del directorio de maestros (reemplazar con la que se obtiene de configuración)
-maedir="$grupo/maeDirMock"
+# Variable que guarda la dirección del directorio de maestros
+maedir="$GRUPO/$MAEDIR"
 
-# Variable que guarda la dirección del directorio de rechazados (reemplazar con la que se obtiene de configuración)
-rechdir="$grupo/rechDirMock"
+# Variable que guarda la dirección del directorio de rechazados
+rechdir="$GRUPO/$RECHDIR"
 
-# Variable que guarda el path a ProPro (reemplazar con ./ProPro.sh cuando se pongan todos en /bin)
-propro="$grupo/ProPro/ProPro.sh"
+# Variable que guarda el path a ProPro
+propro="$GRUPO/$BINDIR/ProPro.sh"
 
 # Variable que guarda el registro de la gestión del archivo, si la encuentra
 gestion=""
@@ -37,16 +40,14 @@ hayArchivosPendientes=false
 function moverRechazado {
 	filename=$1
 	pathOrigen="$novedir/$filename"
-	pathDestino="$rechdir/$filename"
-
-	# Falta invocar a MOVE
+	pathDestino="$rechdir"
+	"$mover" "$pathOrigen" "$pathDestino" "RecPro"
 }
 
 function moverArchivoValido {
 	pathOrigen="$novedir/$1"
-	pathDestino="$2/$1"
-
-	# Falta invocar a MOVE	
+	pathDestino="$2"
+	"$mover" "$pathOrigen" "$pathDestino" "RecPro"	
 }
 
 
@@ -55,7 +56,7 @@ function verificarGestion {
 	if [ ! -n "$gestion" ]
 	then
 		$glog $cmdName "$2 rechazado: Gestión inválida" "ERROR"
-		moverRechazado $filename
+		moverRechazado $2
 		continue
 	fi
 }
@@ -65,7 +66,7 @@ function verificarNorma {
 	if [ ! -n "$row" ]
 	then
 		$glog $cmdName "$2 rechazado: Norma inválida" "ERROR"
-		moverRechazado $filename
+		moverRechazado $2
 		continue
 	fi
 }
@@ -75,7 +76,7 @@ function verificarEmisor {
 	if [ ! -n "$row" ]
 	then
 		$glog $cmdName "$2 rechazado: Emisor inválido" "ERROR"
-		moverRechazado $filename
+		moverRechazado $2
 		continue
 	fi
 }
@@ -85,7 +86,7 @@ function verificarNroArchivo {
 	if ! [[ $1 =~ $re ]]
 	then
 		$glog $cmdName "$2 rechazado: Número de archivo inválido" "ERROR"
-		moverRechazado $filename		
+		moverRechazado $2		
 		continue
 	fi
 }
@@ -95,7 +96,7 @@ function verificarFecha {
 	if ! date -d "${fecha:6:4}-${fecha:3:2}-${fecha:0:2}" &> /dev/null
 	then
 		$glog $cmdName "$2 rechazado: Formato de fecha inválida" "ERROR"
-		moverRechazado $filename
+		moverRechazado $2
 		continue
 	else
 		fechaIni=$(echo "$gestion" | cut -d';' -f 2)
@@ -110,7 +111,7 @@ function verificarFecha {
 		if ! ([ $fechaIniDate -le $fechaReg ] && [ $fechaFinDate -ge $fechaReg ])
 		then
 			$glog $cmdName "$2 rechazado: Fecha fuera del rango de gestión" "ERROR"
-			moverRechazado $filename
+			moverRechazado $2
 			continue	
 		fi		
 	fi
@@ -128,6 +129,7 @@ function verificarArchivoNoVacio {
 }
 
 function verificarCamposArchivosValidos {
+	filename=$1
 	IFS='_' read -a array <<< "$filename"
 	codgestion=${array[0]}
 	codnorma=${array[1]}
@@ -171,14 +173,14 @@ function procesarArchivosNuevos {
 		if [ $isText == "empty" ]
 		then
 			$glog $cmdName "$archivo rechazado: Archivo vacío" "ERROR"
-			moverRechazado $filename
+			moverRechazado $archivo
 		else
 			if [ $isText == "UTF-8" ] || [ $isText == "ASCII" ]
 			then
 				verificarFormatoNombreArchivo $archivo
 			else
 				$glog $cmdName "$archivo rechazado: No es un archivo de texto" "ERROR"
-				moverRechazado $filename
+				moverRechazado $archivo
 			fi
 		fi
 	done
