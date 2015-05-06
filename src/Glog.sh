@@ -60,6 +60,13 @@ fi
 comando=`echo $1 | sed 's/\(.*\)\..*/\1/'`
 mensaje=$2
 
+# verificar si el comando recibido es correcto
+if ! [[ $comando =~ ^(IniPro|RecPro|ProPro|Mover|Glog|Start|Stop|InfPro)$ ]]; 
+then
+	echo "[Glog] Error en comando recibido"
+	exit 1
+fi
+
 # verificar si hay codigo recibido, y si es correcto
 if [ $# -ge 3 ];
 then
