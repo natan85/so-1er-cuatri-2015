@@ -151,14 +151,18 @@ sub leerArchivosSubdirectoriosResultados
 		my $i = 1;
 		while($i < $#ARGV){
 			my $file = $ARGV[$i];
-			buscarEnArchivo($file,$ruta,%posCamposArchInfo);
+			if (index(lc($file), lc('resultado')) != -1){
+				buscarEnArchivo($file,$ruta,%posCamposArchInfo);
+			}
 		}	
 		
 	}else{
 		opendir (DIR, $ruta) or die $!;
 		#Leo cada archivo
 		while (my $file = readdir(DIR)) {
-			buscarEnArchivo($file,$ruta,%posCamposArchInfo);		
+			if (index(lc($file), lc('resultado')) != -1){
+				buscarEnArchivo($file,$ruta,%posCamposArchInfo);
+			}
 	   	 }
 
     		closedir(DIR);
@@ -180,17 +184,18 @@ sub leerTodosArchivosSubdirectorios
 
 	# Elimino los directorios ocultos
 	@subdirs = grep { !/^\./ } @subdirs;
-	print "Raiz: $dir \n";
 	for my $subdir ( @subdirs ) {
 		if (exists($filtros{'-fg'})){
 			my $gestion = $filtros{'-fg'}; 
-			if(defined $gestion and ($subdir eq $gestion)){
-				print "Subdirectorio: $subdir \n";
+			if(defined $gestion and (lc($subdir) eq lc($gestion))){
+				#print "Subdirectorio: $subdir \n";
 				buscarEnDirectorio($dir."/".$subdir);	
 			}
 		}else{
-			print "Subdirectorio: $subdir \n";
-			buscarEnDirectorio($dir."/".$subdir);
+			if($subdir ne "proc"){			
+				#print "Subdirectorio: $subdir \n";
+				buscarEnDirectorio($dir."/".$subdir);
+			}
 		}
 		
 	}
@@ -390,7 +395,7 @@ sub validarCumplioFiltroGestion
 sub validarCumplioFiltroNumeroNorma
 {
 	my $cumplioFiltroNumeroNorma = 0;	
-	my $numero = int ($_[0]);
+	my $numero = $_[0];
 	my $rangoIngresado;
 	if(exists($filtros{'-fn'}) ){
 		$rangoIngresado = $filtros{'-fn'}; 
@@ -480,7 +485,9 @@ sub grabar
 	my $epoc = time();
 	my $nombreArchivo = $ruta."/resultado_".$epoc;
 	open FILE, ">".$nombreArchivo or die $!; 
-	print FILE $resultado; 
+	if(defined $resultado){
+		print FILE $resultado; 
+	}
 	close FILE;
 	print "Se generó el archivo $nombreArchivo\n";
 }
@@ -594,22 +601,11 @@ sub menuFiltros
 	
 	my $input = '';
 
+	imprimirOpcionesMenu();
+
 	while ($input ne '10')
 	{
 	    #clear_screen();
-	    print " \n";
- 	    print "************MENÚ************ \n";		
-	    print "1. Ingresar palabra clave\n".
-		  "2. Filtrar por tipo de norma\n".
-		  "3. Filtrar por año\n". 
-		  "4. Filtrar por numero de norma\n". 
-		  "5. Filtrar por gestión\n". 
-		  "6. Filtrar por emisor\n".
-		  "7. Ejecutar consulta\n".
-		  "8. Mostrar consulta\n".
-		  "9. Limpiar consulta\n".
-		 "10. Salir\n";
-
 	    print "Ingrese su opción: ";
 	    $input = <STDIN>;
 	    chomp($input);
@@ -703,7 +699,9 @@ sub menuFiltros
 				print "Debe realizar al menos un filtro. \n";
 			}
 			
-			limpiarMapas();			
+			limpiarMapas();	
+			imprimirOpcionesMenu();		
+
 		}
 		case '8'
 		{
@@ -718,6 +716,21 @@ sub menuFiltros
 	}#del while
 
 	exit(0);
+}
+
+sub imprimirOpcionesMenu{
+	    print " \n";
+ 	    print "************MENÚ************ \n";		
+	    print "1. Ingresar palabra clave\n".
+		  "2. Filtrar por tipo de norma\n".
+		  "3. Filtrar por año\n". 
+		  "4. Filtrar por numero de norma\n". 
+		  "5. Filtrar por gestión\n". 
+		  "6. Filtrar por emisor\n".
+		  "7. Ejecutar consulta\n".
+		  "8. Mostrar consulta\n".
+		  "9. Limpiar consulta\n".
+		 "10. Salir\n";
 }
 
 sub limpiarMapas(){
