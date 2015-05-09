@@ -1,25 +1,26 @@
 #!/bin/bash
+
 # *******************************************************************
 # *******************************************************************
 # Sistemas Operativos - 1er cuat 2015
 # Grupo 8 - Trabajo Practico H
 # *******************************************************************
 # Uso: 
-# ./Mover.sh <archivo_a_mover> <directorio_de_destino> <comando_que_lo_usa>
+# Mover.sh <archivo_a_mover> <directorio_de_destino> <comando_que_lo_usa>
 # *******************************************************************
 # Los tres parametros son cadenas de caracteres entre comillas dobles.
-# <archivo> (obligatorio): path del archivo a mover
-# <destino> (obligatorio): path del directorio de destino
-# <comando> (obligatorio): nombre del comando que lo invoca
+# archivo (obligatorio): archivo a mover
+# destino (obligatorio): directorio de destino
+# comando (obligatorio): nombre del comando que lo usa
 # *******************************************************************
 # Nota: el ultimo parametro, que es opcional en el documento, lo
 # hice obligatorio para nuestro TP (previa consulta al ayudante).
 # Parece que asi funciona de modo mas coherente.
 # *******************************************************************
 # *******************************************************************
-# Ejemplos de uso:
-# ./Mover.sh "$archivo" "$rechdir" "ProPro"
-# ./Mover.sh "$archivo" "$acepdir" "ProPro"
+# Ejemplos:
+# Mover.sh "$GRUPO/$NOVEDIR/$archivo" "$GRUPO/$RECHDIR" "RecPro"
+# Mover.sh "$GRUPO/$ACEPDIR/$archivo" "$GRUPO/$PROCDIR/proc" "ProPro"
 # *******************************************************************
 # *******************************************************************
 
@@ -35,7 +36,7 @@ COMANDO="Mover"
 # ***************************************************
 
 # verificar variables de ambiente
-if [ ! -n "${GRUPO+1}" ] || [ ! -n "${DUPDIR+1}" ]
+if [ ! -n "${GRUPO+1}" ] || [ ! -n "${BINDIR+1}" ] || [ ! -n "${DUPDIR+1}" ]
 then
 	echo "[Mover] Error en variables de ambiente"
 	exit 1
@@ -45,7 +46,7 @@ fi
 DUPDIR="${DUPDIR##*/}" 
 
 # verificar la cantidad de parametros recibidos
-if [ $# -lt 2 ]
+if [ $# -lt 2 ] || [ $# -gt 3 ]
 then
 	echo "[Mover] Error en cantidad de parametros recibidos"
 	exit 1
@@ -55,12 +56,14 @@ fi
 archivo=$1
 destino=$2
 
-if [ $# -ge 3 ]
+# verificar si se recibio comando y si es correcto
+if [ $# -eq 3 ] && [[ $3 =~ ^(IniPro|RecPro|ProPro)$ ]]; 
 then
 	comando=$3
-else	
+else
 	comando=$COMANDO
 fi
+
 
 # ***************************************************
 
