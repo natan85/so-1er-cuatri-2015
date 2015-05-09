@@ -1,39 +1,39 @@
+#!/bin/bash
+
 # *******************************************************************
 # *******************************************************************
 # Sistemas Operativos - 1er cuat 2015
 # Grupo 8 - Trabajo Practico H
 # *******************************************************************
-# Uso: ./Glog.sh <comando> <mensaje> [codigo]
+# Uso: Glog.sh <comando> <mensaje> [codigo]
 # *******************************************************************
-# Los tres parametros son cadenas de caracteres entre comillas dobles.
-# <comando> (obligatorio): nombre del comando que escribe en su log
-# <mensaje> (obligatotio): texto del mensaje a escribir en el log
-# [codigo] (opcional): alguno de los siguientes codigos:
+# Los tres parametros son cadenas de caracteres.
+# comando (obligatorio): nombre del comando que escribe en su log
+# mensaje (obligatorio): texto del mensaje a escribir en el log
+# codigo (opcional)    : alguno de los siguientes codigos
 # INFO (Informativo)
 # WAR (Warning/Aviso)
 # ERR (Error)
 # *******************************************************************
 # *******************************************************************
-# Ejemplos de uso:
-# ./Glog.sh "RecPro" "Nuevos archivos recibidos" "INFO"
-# ./Glog.sh "IniPro" "El sistema se inicializo parcialmente" "WAR"
-# ./Glog.sh "ProPro" "Error en codigo de protocolizacion" "ERR"
+# Ejemplos:
+# Glog.sh "IniPro" "Directorio de archivos aceptados: $ACEPDIR" "INFO"
+# Glog.sh "RecPro" "El archivo no es un archivo de texto" "ERR"
+# Glog.sh "ProPro" "Se rechaza el archivo por estar duplicado" "WAR"
 # *******************************************************************
 # *******************************************************************
-
-#!/bin/bash
 
 # *******************************************************************
 # Definiciones
 # *******************************************************************
 
-# usuario del sistema en FIUBA
+# usuario del sistema
 USUARIO="$USER"
 
 # cantidad de lineas a conservar al recortar logs
 LINEAS=30
 
-# codigo por default (cuando no se recibe codigo)
+# codigo por default (cuando no se recibe parametro codigo)
 CODIGO="INFO"
 
 # *******************************************************************
@@ -50,46 +50,52 @@ fi
 # eliminar el path de LOGDIR (si venia incluido)
 LOGDIR="${LOGDIR##*/}"
 
-# verificar parametros recibidos
-if [ $# -lt 2 ];
+# verificar cantidad de parametros recibidos
+if [ $# -lt 2 ] || [ $# -gt 3 ]
 then
 	echo "[Glog] Error en cantidad de parametros recibidos"
 	exit 1
 fi
 
+# eliminar la extension del parametro comando (si venia incluida)
 comando=`echo $1 | sed 's/\(.*\)\..*/\1/'`
-mensaje=$2
 
-# verificar si el comando recibido es correcto
-if ! [[ $comando =~ ^(IniPro|RecPro|ProPro|Mover|Glog|Start|Stop|InfPro)$ ]]; 
+# verificar si el comando es correcto
+if ! [[ $comando =~ ^(IniPro|RecPro|ProPro|Mover)$ ]]; 
 then
-	echo "[Glog] Error en comando recibido"
+	echo "[Glog] Comando recibido desconocido"
 	exit 1
 fi
 
-# verificar si hay codigo recibido, y si es correcto
-if [ $# -ge 3 ];
+# verificar si el mensaje esta vacio
+if [ -z "$2" ]
 then
-	if [ $3 != "INFO" ] && [ $3 != "WAR" ] && [ $3 != "ERR" ];
-	then
-		echo "[Glog] Error en codigo recibido, se reemplaza por INFO"
-	else
-		codigo=$3
-	fi
+	echo "[Glog] Mensaje recibido esta vacío"
+	mensaje="xxxx mensaje vacio xxx"
+else
+	mensaje=$2
+fi
+
+# verificar si se recibió codigo, y si es correcto
+if [ $# -eq 3 ] && [[ $3 =~ ^(INFO|WAR|ERR)$ ]]
+then
+	codigo=$3		
+else
+	codigo=$CODIGO
 fi
 
 # directorio del archivo de log
-DIR=$GRUPO/$LOGDIR/$comando
+dir=$GRUPO/$LOGDIR/$comando
 
 # verificar existencia directorio de log, o crearlo
-if [ ! -d $DIR ]; 
+if [ ! -d $dir ]; 
 then
-	mkdir -p $DIR
-	echo "[Glog] Fue creado el directorio $DIR"
+	mkdir -p $dir
+	echo "[Glog] Fue creado el directorio $dir"
 fi
 
 # ***************************************************
-# Escribir en el log
+# Escribir en el log correspondiente al comando
 # ***************************************************
 
 # datos a escribir
@@ -97,25 +103,25 @@ fecha=`date +"%d-%m-%Y %H:%M:%S"`
 usuario=$USUARIO
 
 # archivo donde escribir
-archivo=$DIR/$comando".log"
+archivo=$dir/$comando".log"
 
 # escribir en el log
 echo "$fecha-$usuario-$comando-$codigo-$mensaje" >> "$archivo"
 
-# ***************************************************
-# Recortar archivo de log si es necesario
-# ***************************************************
+# ************************************************************
+# Recortar archivo de log si es necesario (excepto IniPro.log)
+# ************************************************************
 
 # obtener tamanio del archivo
 tamanio=$(stat -c %s "$archivo")
 
 # recortar archivo si excedio el tamanio maximo
-if [ $tamanio -gt $LOGSIZE ]  && [ $comando != "IniPro" ];
+if [ $tamanio -gt $LOGSIZE ] && [ $comando != "IniPro" ];
 then
 	# copiar las utimas lineas en un archivo temporal
 	cat "$archivo" | tail -n $LINEAS > "$archivo.tmp";
 	
-	# mover el archivo temporal sobre el original
+	# copiar el archivo temporal sobre el original
 	mv -f "$archivo.tmp" "$archivo"
 	
 	# datos para escribir en el log
@@ -126,10 +132,12 @@ then
 	mensaje="Archivo ${archivo##*/} excedido, se recorto"	
 	
 	# escribir en archivo de log    	
-	echo "$fecha-$usuario-$comando-$codigo-$mensaje" >> "$archivo"
+	echo "$fecha-$usuario-$comando-$codigo-$mensaje" >> "$archivo"	
 	
 	# mostrar por pantalla
 	echo "[Glog] Archivo ${archivo##*/} excedido, se recorto"
 fi
+
+#****************************************************
 
 exit 0
