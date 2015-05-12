@@ -113,8 +113,8 @@ sub consultar{
 }
 
 sub informar{
-	validarPalabraClaveYGuardar();
 	cargarMapaEmisores();
+	validarGuardarInforme();
 	menuFiltros();	
 } 
 
@@ -141,6 +141,16 @@ sub validarPalabraClaveYGuardar
 	}
 }
 
+sub validarGuardarInforme
+{
+	my $ultimaEntrada = $ARGV[$#ARGV];
+	#print "ultima entrada: $ultimaEntrada";
+	if(defined $ultimaEntrada and $ultimaEntrada eq "-g"){
+		$pidioGuardar = 1;	
+	}
+
+}
+
 sub leerArchivosSubdirectoriosResultados
 {
 	my $ruta = $ENV{"GRUPO"}.'/'.$ENV{"INFODIR"};
@@ -149,7 +159,11 @@ sub leerArchivosSubdirectoriosResultados
 	if($#ARGV > 1) 
 	{
 		my $i = 1;
-		while($i < $#ARGV){
+		my $final = $#ARGV;
+		if($pidioGuardar == 1){
+			$final -= 1; 	
+		}
+		while($i < $final){
 			my $file = $ARGV[$i];
 			if (index(lc($file), lc('resultado')) != -1){
 				buscarEnArchivo($file,$ruta,%posCamposArchInfo);
@@ -222,10 +236,9 @@ sub buscarEnArchivo
 	my $ruta = $_[1]; 
 	my (%posCamposArch) = @_;
 	my $filename = $ruta.'/'.$file;
-	open(my $fh, '<:encoding(UTF-8)', $filename)
-	 or die "No se pudo abrir el archivo '$filename' $!";
+	open(ENT,"<$filename")|| die "NO SE PUEDE REALIZAR LA CONSULTA. No se encontro el archivo $filename \n";
 		#Leo cada linea 
-		while (my $row = <$fh>) {
+		while (my $row = <ENT>) {
 			chomp $row;
 			#Inicializo variables de filtrado
 			my $cumplioCausal = 0;
@@ -277,7 +290,8 @@ sub buscarEnArchivo
 				my $renglon1 = $tipoNorma." ".$descEmisor."(".$emisor.") ".$numero."/".$anio." ".$gestion." ".$fechaNorma;
 				my $peso;				
 				if($sinPalabraClave == 0 and defined $palabraClave){
-					$peso = obtenerPeso($causal, $extracto, $palabraClave);
+					$peso = obtenerPeso(lc($causal), lc($extracto), lc($palabraClave));
+					print "Peso: $peso";
 					$renglon1 .= " ".$peso;
 				}
 				$renglon1 .= " \n";
@@ -285,7 +299,7 @@ sub buscarEnArchivo
 				my $renglon3 = $causal."\n";
 				#Cargamos en la lista para luego ordenar
 				my $idReg = $data[$posCamposArch{'idReg'}];
-				my $lineaSalida = $tipoNorma.";".$descEmisor.";".$emisor.";".$numero.";".$anio.";".$gestion.";".$fechaNorma.";".$causal.";".$extracto.";".$idReg."\n";
+				my $lineaSalida = $tipoNorma.";".$descEmisor.";".$emisor.";".$numero.";".$anio.";".$gestion.";".$fechaNorma.";".$causal.";".$extracto.";".$idReg;
 				
 				if($sinPalabraClave == 0){
 					$contenido_resultados_consola{$peso."-".$idReg} = $renglon1.$renglon2.$renglon3;
@@ -299,15 +313,14 @@ sub buscarEnArchivo
 				
 			}
 	}#Del while lineas
-	close($fh);
+	close(ENT);
 }
 #**************************METODS PARA CARGAS INICIALES ***********************************
 sub cargarMapaEmisores
 {
 	my $ruta = $ENV{"GRUPO"}.'/'.$ENV{"MAEDIR"};
 	my $filename = $ruta.'/emisores.mae';
-	open(my $fh, '<:encoding(UTF-8)', $filename)
-	 or die "No se pudo abrir el archivo '$filename' $!";
+	open(my $fh,"<$filename")|| die "NO SE PUEDE REALIZAR LA CONSULTA. No se encontro el archivo $filename \n";
 		#Leo cada linea 
 		while (my $row = <$fh>) {
 			chomp $row;
@@ -460,9 +473,29 @@ sub validarCumplioFiltroAnio
 
 sub imprimirYGrabarResultadosOrdenados()
 {
-	my $resultadoArchivo;		    
-	print "********Resultados********\n";		
-	foreach my $keyHash (sort{$b cmp $a} keys %contenido_resultados_consola) {
+	my $resultadoArchivo;	
+	my @sortKeysHash;	    
+	print "********Resultados********\n";	
+	if(defined $palabraClave){
+		@sortKeysHash = sort {
+		     
+		     my @aValues = split('-', $a);
+		     my @bValues = split('-', $b);
+
+		     if($aValues[0] > $bValues[0]) {
+			 return -1;
+		     }
+		     elsif($bValues[0] > $aValues[0]) {
+			  return +1;
+		     }
+		     else {
+			return 0;
+		     }
+		  }keys %contenido_resultados_consola;	
+	}else{
+		@sortKeysHash = sort{$b cmp $a} keys %contenido_resultados_consola;		
+	}	
+	foreach my $keyHash (@sortKeysHash){
 		my $resultado = $contenido_resultados_consola{$keyHash};
 		print "$resultado\n";
 		if ($pidioGuardar == 1){
@@ -483,12 +516,14 @@ sub grabar
 	my $resultado = $_[0];
 	my $ruta = $ENV{"GRUPO"}.'/'.$ENV{"INFODIR"};
 	my $epoc = time();
-	my $nombreArchivo = $ruta."/resultado_".$epoc;
-	open FILE, ">".$nombreArchivo or die $!; 
+	my $nombreArchivo = $ruta."/resultado_".$epoc.".txt";
+	
 	if(defined $resultado){
-		print FILE $resultado; 
+		open FILE, ">".$nombreArchivo or die $!; 
+		print FILE "$resultado\n"; 
+		close FILE;
 	}
-	close FILE;
+
 	print "Se generó el archivo $nombreArchivo\n";
 }
 
@@ -498,8 +533,7 @@ sub obtenerCodigoGestion
 	my $gestionBuscada = $_[0];
 	my $ruta = $ENV{"GRUPO"}.'/'.$ENV{"MAEDIR"};
 	my $filename = $ruta.'/gestiones.mae';
-	open(my $fh, '<:encoding(UTF-8)', $filename)
-	 or die "No se pudo abrir el archivo '$filename' $!";
+	open(my $fh,"<$filename")|| die "NO SE PUEDE REALIZAR LA CONSULTA. No se encontro el archivo $filename \n";
 		#Leo cada linea 
 		while (my $row = <$fh>) {
 			chomp $row;
@@ -687,7 +721,7 @@ sub menuFiltros
 			my $cantFiltrosCargados = keys %filtros;
 			if($cantFiltrosCargados > 0){
 				my $opcion=$ARGV[0];
-				imprimirFiltros();
+				#imprimirFiltros();
 				if($opcion eq "-c"){
 					leerTodosArchivosSubdirectorios();		   
 				}
@@ -749,3 +783,5 @@ sub estadisticas
 {
 	print "Se eligió -e\n"; 
 }
+
+1;#necesario
