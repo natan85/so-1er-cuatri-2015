@@ -33,6 +33,10 @@ RECHDIR="rechazados"
 PROCDIR="protocolizados"
 DUPDIR="dup"
 
+#Nombres reservados para cada directorio
+vNombres=( "pruebas" "src" "conf" "mae" "bin" "novedades" "log" "a_protocolizar"
+ "informes" "rechazados" "protocolizados" "dup" )
+
 # variables que indican si ya se enuentra instalado
 BMAEDIR=0
 BBINDIR=0
@@ -47,8 +51,29 @@ BINFODIR=0
 BRECHDIR=0
 BPROCDIR=0
 BDUPDIR=0
-
-
+########################################################
+# 1 si y existe en la lista de reservados
+# 0 si no existe en la lista de reservados
+function estaReservado() {
+estaenlista=0
+for x in ${vNombres[*]}
+do
+#echo "nombre reservado $x"
+    if [ "$x" = "$1" ]; then
+    estaenlista=1
+    fi
+done
+    if [ $estaenlista -eq 1 ]; then
+    echo "El Nombre ya esta definido o es un Nombre reservado"
+    echo "${vNombres[@]}"
+    return 1
+    else
+    echo "Agregado a la lista de Nombres"
+    vNombres=( "${vNombres[@]}" "$1" )
+    echo "${vNombres[@]}"
+    return 0
+    fi
+}
 function toLower() {
     echo $1 | tr "[:upper:]" "[:lower:]"
 }
@@ -161,9 +186,11 @@ if [ $BBINDIR -ne 0 ]; then
         if [ ! -z "$dirBin" ]; then
             value=`echo $dirBin | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
             if [ $? -eq 0 ]; then
+            estaReservado "$dirBin"
+                if [ "$?" -ne 1 ]; then
                 BINDIR=$dirBin
-
                 isOk=1
+                fi
             else
                 echoAndLog $MSGERR "$dirBin no es un nombre de directorio valido."
             fi
@@ -185,8 +212,11 @@ if [ $BMAEDIR -ne 0 ]; then
         if [ ! -z "$dirMae" ]; then
             value=`echo $dirMae | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
             if [ $? -eq 0 ]; then
+            estaReservado "$dirMae"
+                if [ "$?" -ne 1 ]; then
                 MAEDIR=$dirMae
                 isOk=1
+                fi
             else
                 echoAndLog $MSGERR "$dirMae no es un nombre de directorio valido."
         echo ""
@@ -209,8 +239,11 @@ if [ $BNOVEDIR -ne 0 ]; then
         if [ ! -z "$dirnovedades" ]; then
             value=`echo $dirnovedades | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
             if [ $? -eq 0 ]; then
+            estaReservado "$dirnovedades"
+                if [ "$?" -ne 1 ]; then
                 NOVEDIR=$dirnovedades
                 isOk=1
+                fi
             else
                 echoAndLog $MSGERR "$dirnovedades no es un nombre de directorio valido."
         echo ""
@@ -271,8 +304,11 @@ if [ $BACEPDIR -ne 0 ]; then
         if [ ! -z "$dirAcep" ]; then
             value=`echo $dirAcep | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
             if [ $? -eq 0 ]; then
+            estaReservado "$dirAcep"
+                if [ "$?" -ne 1 ]; then
                 ACEPDIR=$dirAcep
                 isOk=1
+                fi
             else
                 echoAndLog $MSGERR "$dirAcep no es un nombre de directorio valido."
         echo ""
@@ -295,14 +331,17 @@ function definirDirInformes() {
         if [ ! -z "$dirInfo" ]; then
             value=`echo $dirInfo | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
             if [ $? -eq 0 ]; then
+            estaReservado "$dirInfo"
+                if [ "$?" -ne 1 ]; then
                 INFODIR=$dirInfo
                 isOk=1
+                fi
             else
                 echoAndLog $MSGERR "$dirInfo no es un nombre de directorio valido."
         echo ""
             fi
         else
-            isOk=1
+        isOk=1
         fi 
     done
     loguear $MSGINFO "Directorio de grabación de los informes de salida: $INFODIR"
@@ -319,8 +358,11 @@ if [ $BLOGDIR -ne 0 ]; then
         if [ ! -z "$dirLog" ]; then
             value=`echo $dirLog | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
             if [ $? -eq 0 ]; then
+            estaReservado "$dirLog"
+                if [ "$?" -ne 1 ]; then
                 LOGDIR=$dirLog
                 isOk=1
+                fi
             else
                 echoAndLog $MSGERR "$dirLog no es un nombre de directorio valido."
         echo ""
@@ -367,8 +409,11 @@ if [ $BRECHDIR -ne 0 ]; then
         if [ ! -z "$dirRech" ]; then
             value=`echo $dirRech | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
             if [ $? -eq 0 ]; then
+            estaReservado "$dirRech"
+                if [ "$?" -ne 1 ]; then
                 RECHDIR=$dirRech
                 isOk=1
+                fi
             else
                 echoAndLog $MSGERR "$dirRech no es un nombre de directorio valido."
         echo ""
@@ -391,8 +436,11 @@ if [ $BPROCDIR -ne 0 ]; then
         if [ ! -z "$dirProt" ]; then
             value=`echo $dirProt | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
             if [ $? -eq 0 ]; then
+            estaReservado "$dirProt"
+                if [ "$?" -ne 1 ]; then
                 PROCDIR=$dirProt
                 isOk=1
+                fi
             else
                 echoAndLog $MSGERR "$dirProt no es un nombre de directorio valido.\n"
             fi
@@ -414,8 +462,11 @@ if [ $BDUPDIR -ne 0 ]; then
         if [ ! -z "$dirDup" ]; then
             value=`echo $dirDup | grep "^\(\w\|_\)\+\(/\(\w\|_\)\+\)*$"`
             if [ $? -eq 0 ]; then
+                estaReservado "$dirDup"
+                if [ "$?" -ne 1 ]; then
                 DUPDIR=$dirDup
                 isOk=1
+                fi
             else
                 echoAndLog $MSGERR "$dirDup no es un nombre de directorio valido.\n"
             fi
@@ -788,6 +839,7 @@ loguear $MSGINFO "Inicio de Ejecucion de InsPro"
 loguear $MSGINFO "Directorio predefinido de Configuracion : CONFDIR"
 loguear $MSGINFO "Log de la instalacion : CONFDIR/InsPro.log"
 #clear
+estaReservado "conf"
 chequeoInicial
 chequearInstalacion
 detectarInstalacionArchivos
