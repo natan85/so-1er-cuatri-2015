@@ -8,6 +8,7 @@ our %filtros;
 our %normasDesc;
 our %gestionesDesc;
 our %emisoresDesc;
+our %emisoresArchivoDesc;
 
 our %posCamposArchConsulta = (
 			'fechaNorma' => 1,
@@ -915,6 +916,10 @@ sub menu_estadistica
 		    $input = '';
 		    leerPorGestion(lc($gestion));
                     imprimirGestiones(lc($gestion));
+		    #print "Emisores Archivo: \n";	
+			#foreach my $name (keys %emisoresArchivoDesc) {
+			 #   	printf "%-8s %s\n", $name, $emisoresArchivoDesc{$name};
+			#}	
 		}
 		case '3'{}
 		else{
@@ -941,7 +946,9 @@ sub imprimirGestiones
 	            if(defined $gestionDescripcion){
 		   	printf "gestion: $gestionDescripcion  ";
 		    } 
-               print " año:  $registrosEstadisticos{anio_normas}[$j] \n";
+               print " Año:  $registrosEstadisticos{anio_normas}[$j] \n";
+	       print " Emisores:  \n";
+	       print "$registrosEstadisticos{emisores}[$j]";	
                print "cantidad de resoluciones: $registrosEstadisticos{res}[$j] \n";
                print "cantidad de disposiciones: $registrosEstadisticos{dis}[$j] \n";
                print "cantidad de convenios: $registrosEstadisticos{con}[$j] \n";
@@ -997,9 +1004,11 @@ sub ProcesarGestion
 	foreach my $nodo (@nodos)  
 	{
 		 #$nodo = $dir.'/'.$nodo; 
-		 $cant_registros= contarRegistros ($nodo,$subdirCompleto);
+		 my $nombreArchivo = $nodo;
                  $extension = ($nodo =~ m/([^.]+)$/)[0]; #guarda la extension del archivo porque me sirve para el hash
                  $nodo=~ s{\.[^.]+$}{}; #elimina la extensión del nombre del archivo
+		 my $keyArchivo = lc($extension)."-".$nodo;  
+		 $cant_registros= contarRegistros ($nombreArchivo,$subdirCompleto,lc($extension),$nodo);
 
                 
       		 if ($nodo eq $nodoViejo)
@@ -1007,29 +1016,23 @@ sub ProcesarGestion
                                  $i--;
           			 $registrosEstadisticos {anio_normas}[$i]=$nodo;      
           			 $registrosEstadisticos {lc($extension)}[$i]=$cant_registros;
-          			 
-                                 
-                                 
-                                   $i++;
-
-           
-
+				 $registrosEstadisticos {emisores}[$i]=$emisoresArchivoDesc{$keyArchivo};
+                                 $i++;
 			} else 
         		{  #si entra acá es porque no se repite el año
                                  
                 		#inicializo con 0
-               		         $registrosEstadisticos {res}[$i]=0;
-                 		 $registrosEstadisticos {dis}[$i]=0;
-                 	         $registrosEstadisticos {con}[$i]=0;
-
-
+               		        $registrosEstadisticos {res}[$i]=0;
+                 		$registrosEstadisticos {dis}[$i]=0;
+                 	        $registrosEstadisticos {con}[$i]=0;
                  		$registrosEstadisticos {anio_normas}[$i]=$nodo;
                  		$registrosEstadisticos {lc($extension)}[$i]=$cant_registros;
+				$registrosEstadisticos {emisores}[$i]=$emisoresArchivoDesc{$keyArchivo};
                 	        $i++; 
-             
         		}
        
-                         $nodoViejo=$nodo;       
+                         $nodoViejo=$nodo; 
+		     
                  #print "años $nodo ,$cant_registros \n";
 	}
 		#print "estadisticas: \n";	
@@ -1041,12 +1044,28 @@ sub contarRegistros
 { 
     	my $file = $_[0]; 
 	my $ruta = $_[1]; 
+	my $gestion = $_[2];
+	my $anio = $_[3];
+	my $keyArchivo = $gestion."-".$anio;
 	my (%posCamposArch) = @_;
 	my $filename = $ruta.'/'.$file;
 	open(my $fh,"<$filename")|| die "NO SE PUEDE REALIZAR LA ACCIÓN. No se encontro el archivo $filename \n";
 	#Leo cada linea 
           my $count = 0;
-          while( <$fh> ) { 
+          while(my $row = <$fh> ) { 
+		chomp($row);
+		my @data = split(";",$row);
+		my $codigoEmisor = $data[$posCamposArchConsulta{'emisor'}];
+ 		my $emisorMapa = $emisoresDesc{lc($codigoEmisor)};
+		if (exists($emisoresArchivoDesc{$keyArchivo})){
+			my $emisorArchDesc = $emisoresArchivoDesc{$keyArchivo};
+			#No esta agregado el emisor
+			if(index(lc($emisorArchDesc),lc($emisorMapa)) == -1){
+				$emisoresArchivoDesc{$keyArchivo} = $emisorArchDesc.$emisorMapa."\n";		
+			}	
+		}else{
+			$emisoresArchivoDesc{$keyArchivo} = $emisorMapa."\n";
+		}
 		$count++; 
 	  }
           #print "cantidad de registros $count \n";
