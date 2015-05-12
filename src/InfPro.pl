@@ -5,7 +5,8 @@ use Fcntl qw(:flock);
 use feature qw/switch/; 
 use Switch;
 our %filtros;
-
+our %normasDesc;
+our %gestionesDesc;
 our %emisoresDesc;
 
 our %posCamposArchConsulta = (
@@ -56,6 +57,10 @@ our $sinPalabraClave = 1;
 our $palabraClave;
 our %contenido_resultados_consola;
 our %contenido_resultados_archivo;
+our %registrosEstadisticos ; #aca se guardan todos los registros que se mostraran por pantalla
+our $listaEmisores;
+
+
 ###### Se valida que el comando no este en ejecución#####
 open(my $script_fh, '<', $0)
    or die("No se pudo abrir el archivo: $!\n");
@@ -76,6 +81,9 @@ if (!exists($ENV{"MAEDIR"}) && !exists($ENV{"PROCDIR"}) && !exists($ENV{"INFODIR
 ###### MENU ##############################
 ###### Si no ingresa ningún parametro se mostrará la ayuda
 my $num_parametros = $#ARGV + 1;
+cargarMapaGestiones();
+cargarMapaEmisores();
+cargarMapaNormas();
 
 if ($num_parametros < 1) {
     print "Debe ingresar una opción.\n";
@@ -107,14 +115,12 @@ print "Ayuda: InfPro [opción] [argumentos]
 }
 
 sub consultar{
-	cargarMapaEmisores();
 	validarPalabraClaveYGuardar();
 	menuFiltros();
 }
 
 sub informar{
-	validarPalabraClaveYGuardar();
-	cargarMapaEmisores();
+	validarGuardarInforme();
 	menuFiltros();	
 } 
 
@@ -141,19 +147,34 @@ sub validarPalabraClaveYGuardar
 	}
 }
 
+sub validarGuardarInforme
+{
+	my $ultimaEntrada = $ARGV[$#ARGV];
+	#print "ultima entrada: $ultimaEntrada";
+	if(defined $ultimaEntrada and $ultimaEntrada eq "-g"){
+		$pidioGuardar = 1;	
+	}
+
+}
+
 sub leerArchivosSubdirectoriosResultados
 {
 	my $ruta = $ENV{"GRUPO"}.'/'.$ENV{"INFODIR"};
-	print "Ruta de Informar $ruta \n";
 	#Si pasaron la lista de archivos
 	if($#ARGV > 1) 
 	{
 		my $i = 1;
-		while($i < $#ARGV){
+		my $final = $#ARGV;
+		if($pidioGuardar == 1){
+			$final -= 1; 	
+		}
+	        print "Final: $final \n";
+		while($i <= $final){
 			my $file = $ARGV[$i];
 			if (index(lc($file), lc('resultado')) != -1){
 				buscarEnArchivo($file,$ruta,%posCamposArchInfo);
 			}
+			$i+= 1;
 		}	
 		
 	}else{
@@ -192,7 +213,8 @@ sub leerTodosArchivosSubdirectorios
 				buscarEnDirectorio($dir."/".$subdir);	
 			}
 		}else{
-			if($subdir ne "proc"){			
+			my $gestionMapa = $gestionesDesc{lc($subdir)};
+			if(defined $gestionMapa){
 				#print "Subdirectorio: $subdir \n";
 				buscarEnDirectorio($dir."/".$subdir);
 			}
@@ -222,10 +244,9 @@ sub buscarEnArchivo
 	my $ruta = $_[1]; 
 	my (%posCamposArch) = @_;
 	my $filename = $ruta.'/'.$file;
-	open(my $fh, '<:encoding(UTF-8)', $filename)
-	 or die "No se pudo abrir el archivo '$filename' $!";
+	open(ENT,"<$filename")|| die "NO SE PUEDE REALIZAR LA CONSULTA. No se encontro el archivo $filename \n";
 		#Leo cada linea 
-		while (my $row = <$fh>) {
+		while (my $row = <ENT>) {
 			chomp $row;
 			#Inicializo variables de filtrado
 			my $cumplioCausal = 0;
@@ -277,7 +298,8 @@ sub buscarEnArchivo
 				my $renglon1 = $tipoNorma." ".$descEmisor."(".$emisor.") ".$numero."/".$anio." ".$gestion." ".$fechaNorma;
 				my $peso;				
 				if($sinPalabraClave == 0 and defined $palabraClave){
-					$peso = obtenerPeso($causal, $extracto, $palabraClave);
+					$peso = obtenerPeso(lc($causal), lc($extracto), lc($palabraClave));
+					print "Peso: $peso";
 					$renglon1 .= " ".$peso;
 				}
 				$renglon1 .= " \n";
@@ -299,15 +321,14 @@ sub buscarEnArchivo
 				
 			}
 	}#Del while lineas
-	close($fh);
+	close(ENT);
 }
 #**************************METODS PARA CARGAS INICIALES ***********************************
 sub cargarMapaEmisores
 {
 	my $ruta = $ENV{"GRUPO"}.'/'.$ENV{"MAEDIR"};
 	my $filename = $ruta.'/emisores.mae';
-	open(my $fh, '<:encoding(UTF-8)', $filename)
-	 or die "No se pudo abrir el archivo '$filename' $!";
+	open(my $fh,"<$filename")|| die "NO SE PUEDE REALIZAR LA CONSULTA. No se encontro el archivo $filename \n";
 		#Leo cada linea 
 		while (my $row = <$fh>) {
 			chomp $row;
@@ -318,6 +339,41 @@ sub cargarMapaEmisores
 		}
 	close ($fh);
 }
+
+sub cargarMapaNormas
+{
+	my $ruta = $ENV{"GRUPO"}.'/'.$ENV{"MAEDIR"};
+	my $filename = $ruta.'/normas.mae';
+	open(my $fh, '<:encoding(UTF-8)', $filename)
+	 or die "No se pudo abrir el archivo '$filename' $!";
+		#Leo cada linea 
+		while (my $row = <$fh>) {
+			chomp $row;
+			my @data = split(";",$row);
+			my $descripcion = $data[$posCamposNormas{'descripcion'}];
+			my $codigo = $data[$posCamposNormas{'codigo'}];
+			$normasDesc{lc($codigo)} = $descripcion;
+		}
+	close ($fh);
+}
+
+sub cargarMapaGestiones
+{
+	my $ruta = $ENV{"GRUPO"}.'/'.$ENV{"MAEDIR"};
+	my $filename = $ruta.'/gestiones.mae';
+	open(my $fh, '<:encoding(UTF-8)', $filename)
+	 or die "No se pudo abrir el archivo '$filename' $!";
+		#Leo cada linea 
+		while (my $row = <$fh>) {
+			chomp $row;
+			my @data = split(";",$row);
+			my $descripcion = $data[$posCamposGestiones{'descripcion'}];
+			my $codigo = $data[$posCamposGestiones{'codigo'}];
+			$gestionesDesc{lc($codigo)} = $descripcion;
+		}
+	close ($fh);
+}
+
 
 sub cargarFiltrosYValidarGuardar
 {
@@ -460,9 +516,29 @@ sub validarCumplioFiltroAnio
 
 sub imprimirYGrabarResultadosOrdenados()
 {
-	my $resultadoArchivo;		    
-	print "********Resultados********\n";		
-	foreach my $keyHash (sort{$b cmp $a} keys %contenido_resultados_consola) {
+	my $resultadoArchivo;	
+	my @sortKeysHash;	    
+	print "********Resultados********\n";	
+	if(defined $palabraClave){
+		@sortKeysHash = sort {
+		     
+		     my @aValues = split('-', $a);
+		     my @bValues = split('-', $b);
+
+		     if($aValues[0] > $bValues[0]) {
+			 return -1;
+		     }
+		     elsif($bValues[0] > $aValues[0]) {
+			  return +1;
+		     }
+		     else {
+			return 0;
+		     }
+		  }keys %contenido_resultados_consola;	
+	}else{
+		@sortKeysHash = sort{$b cmp $a} keys %contenido_resultados_consola;		
+	}	
+	foreach my $keyHash (@sortKeysHash){
 		my $resultado = $contenido_resultados_consola{$keyHash};
 		print "$resultado\n";
 		if ($pidioGuardar == 1){
@@ -483,13 +559,17 @@ sub grabar
 	my $resultado = $_[0];
 	my $ruta = $ENV{"GRUPO"}.'/'.$ENV{"INFODIR"};
 	my $epoc = time();
-	my $nombreArchivo = $ruta."/resultado_".$epoc;
-	open FILE, ">".$nombreArchivo or die $!; 
+	my $nombreArchivo = $ruta."/resultado_".$epoc.".txt";
+	
 	if(defined $resultado){
-		print FILE $resultado; 
+		open FILE, ">".$nombreArchivo or die $!; 
+		print FILE "$resultado\n"; 
+		close FILE;
+		print "Se generó el archivo $nombreArchivo\n";
+	}else{
+		print "La consulta no produjo resultados.\n";
 	}
-	close FILE;
-	print "Se generó el archivo $nombreArchivo\n";
+
 }
 
 #*************************METODOS AUXILIARES PARA OBTENCION DE DATOS********************
@@ -498,8 +578,7 @@ sub obtenerCodigoGestion
 	my $gestionBuscada = $_[0];
 	my $ruta = $ENV{"GRUPO"}.'/'.$ENV{"MAEDIR"};
 	my $filename = $ruta.'/gestiones.mae';
-	open(my $fh, '<:encoding(UTF-8)', $filename)
-	 or die "No se pudo abrir el archivo '$filename' $!";
+	open(my $fh,"<$filename")|| die "NO SE PUEDE REALIZAR LA CONSULTA. No se encontro el archivo $filename \n";
 		#Leo cada linea 
 		while (my $row = <$fh>) {
 			chomp $row;
@@ -582,6 +661,10 @@ sub imprimirFiltros
 		print "Palabra clave: $palabraClave \n";		
 	}	
 
+	if($pidioGuardar == 1){
+		print "Se pidió guardar resultados.\n";	
+	}
+
 	foreach my $name (keys %filtros) {
 	    	printf "%-8s %s\n", $name, $filtros{$name};
 	}
@@ -598,7 +681,6 @@ sub imprimirEmisores
 
 sub menuFiltros
 {
-	
 	my $input = '';
 
 	imprimirOpcionesMenu();
@@ -614,14 +696,12 @@ sub menuFiltros
 	    {
 		case '1'
 		{
-		    
 		    print "Ingrese palabra clave: ";
 		    my $palabra = <STDIN>;
 		    chomp($palabra);
 		    $palabraClave = $palabra;	
 		    $sinPalabraClave = 0;	
 		    $input = '';
-
 		}
 
 		case '2'
@@ -629,7 +709,12 @@ sub menuFiltros
 		    print "Ingrese el tipo de norma: ";
 		    my $tipo = <STDIN>;
 		    chomp($tipo);
-		    $filtros{"-ft"} = $tipo;	
+		    my $normaMapa = $normasDesc{lc($tipo)};
+		    if(defined $normaMapa){
+			$filtros{"-ft"} = $tipo;
+		    }else{
+			print "Tipo de norma incorrecta. Intente de nuevo.\n";
+		    }
 		    #Para la busqueda por descripcion
 		    #$descripcionFiltros{$tipo} = obtenerCodigoNorma($tipo);			
 		    $input = ''; 
@@ -643,7 +728,11 @@ sub menuFiltros
 		    print "Ingrese Año Hasta: ";
 		    my $anioHasta = <STDIN>;
 		    chomp($anioHasta);
-		    $filtros{"-fa"} = $anioDesde."-".$anioHasta;		
+		    if ($anioDesde > $anioHasta){
+		    	print "Año Desde debe ser menor que Años Hasta. Intente de nuevo.\n";		
+		    }else{
+			$filtros{"-fa"} = $anioDesde."-".$anioHasta;		
+		    }
 		    $input = '';
 		}
 
@@ -655,7 +744,11 @@ sub menuFiltros
 		    print "Ingrese Número Hasta: ";
 		    my $numeroHasta = <STDIN>;
 		    chomp($numeroHasta);
-		    $filtros{"-fn"} = $numeroDesde."-".$numeroHasta;		
+		    if ($numeroDesde > $numeroHasta){
+		    	print "Número Desde debe ser menor que Número Hasta. Intente de nuevo.\n";		
+		    }else{
+			$filtros{"-fn"} = $numeroDesde."-".$numeroHasta;		
+		    }
 		    $input = '';
 		}
 
@@ -664,7 +757,13 @@ sub menuFiltros
 		    print "Ingrese la gestión: ";
 		    my $gestion = <STDIN>;
 		    chomp($gestion);
-		    $filtros{"-fg"} = $gestion;
+		    my $gestionMapa = $gestionesDesc{lc($gestion)};
+		    if(defined $gestionMapa){
+			$filtros{"-fg"} = $gestion;
+		    }else{
+			print "Gestión incorrecta. Intente de nuevo.\n";
+		    }
+		    
 		    #Para la busqueda por descripcion	
 		    #$descripcionFiltros{$gestion} = obtenerCodigoGestion($gestion);		
 		    $input = '';
@@ -675,7 +774,12 @@ sub menuFiltros
 		    print "Ingrese el emisor: ";
 		    my $emisor = <STDIN>;
 		    chomp($emisor);
-		    $filtros{"-fe"} = $emisor;	
+		    my $emisorMapa = $emisoresDesc{lc($emisor)};
+		    if(defined $emisorMapa){
+			$filtros{"-fe"} = $emisor;
+		    }else{
+			print "Emisor incorrecto. Intente de nuevo.\n";
+		    }
 		    #Para la busqueda por descripcion
 		    #$descripcionFiltros{$emisor} = obtenerCodigoEmisor($emisor);		
 		    $input = '';
@@ -683,11 +787,10 @@ sub menuFiltros
 
 		case '7'
 		{
-			
 			my $cantFiltrosCargados = keys %filtros;
 			if($cantFiltrosCargados > 0){
 				my $opcion=$ARGV[0];
-				imprimirFiltros();
+				#imprimirFiltros();
 				if($opcion eq "-c"){
 					leerTodosArchivosSubdirectorios();		   
 				}
@@ -701,7 +804,6 @@ sub menuFiltros
 			
 			limpiarMapas();	
 			imprimirOpcionesMenu();		
-
 		}
 		case '8'
 		{
@@ -710,6 +812,13 @@ sub menuFiltros
 		case '9'
 		{
 		    %filtros = ();
+		}
+		case '10'
+		{
+		    
+		}
+		else{
+			print "Opción Incorrecta! \n";
 		}
 
 	    }#del switch
@@ -745,7 +854,211 @@ sub clear_screen
     system("clear");
 }
 
+
+#*****************Estadisticas*********************
+sub menu_estadistica
+{ 
+
+
+#$registrosEstadisticos {anio_normas}[0]=2007;
+#$registrosEstadisticos {cantDisp}[0]=4;
+#$registrosEstadisticos {cantRes}[0]=0;
+#$registrosEstadisticos {cantConv}[0]=0;
+
+#$registrosEstadisticos {anio_normas}[1]=2008;
+#$registrosEstadisticos {cantDisp}[1]=51;
+#$registrosEstadisticos {cantRes}[1]=0;
+
+
+#print "estadisticas: \n";	
+	#foreach my $name (keys %registrosEstadisticos) {
+	    	#print "$name";
+	#	for my $i ( 0 .. $#{ $registrosEstadisticos{$name} } ) {
+               		#print " $name = $registrosEstadisticos{$name}[$i] \n";      
+    		#}
+	#}
+	#imprimirGestiones();
+
+	my $input = '';
+
+	while ($input ne '3')
+	{
+	    #clear_screen();
+	    print " \n";
+ 	    print "************MENÚ Estadisticas************ \n";		
+	    print "1. Filtrar por año [año o año desde-año hasta]\n". 
+		  "2. Filtrar por gestión\n". 
+		  "3. Salir\n";
+
+	    print "Ingrese su opción: ";
+	    $input = <STDIN>;
+	    chomp($input);
+
+	    switch ($input)
+	    {
+		case '1'
+		{
+		    print "Ingrese el año o rango: ";
+		    my $anio = <STDIN>;
+		    chomp($anio);
+		    $filtros{"-fa"} = $anio;		
+		    $input = '';
+		}
+		case '2'
+		{
+		    print "Ingrese la gestión: ";
+		    my $gestion = <STDIN>;
+		    chomp($gestion);
+		    $filtros{"-fg"} = $gestion;
+		    #Para la busqueda por descripcion	
+		    #$descripcionFiltros{$gestion} = obtenerCodigoGestion($gestion);		
+		    $input = '';
+		    leerPorGestion(lc($gestion));
+                    imprimirGestiones(lc($gestion));
+		}
+		case '3'{}
+		else{
+			print "Opción Incorrecta! \n";
+		}
+
+	    }#del switch
+	}#del while
+
+	exit(0);             
+}
+
+sub imprimirGestiones
+{
+	my $gestion=$_[0];
+         
+            #print "gestion: $gestionesDesc{$gestion} ,\n";
+
+         
+	for my $j ( 0 .. $#{ $registrosEstadisticos{anio_normas} } ) 
+		{
+
+               my $gestionDescripcion = $gestionesDesc{lc($gestion)}; 
+	            if(defined $gestionDescripcion){
+		   	printf "gestion: $gestionDescripcion  ";
+		    } 
+               print " año:  $registrosEstadisticos{anio_normas}[$j] \n";
+               print "cantidad de resoluciones: $registrosEstadisticos{res}[$j] \n";
+               print "cantidad de disposiciones: $registrosEstadisticos{dis}[$j] \n";
+               print "cantidad de convenios: $registrosEstadisticos{con}[$j] \n";
+
+
+                }
+
+        #print "Descripcion de las Gestiones: \n";	
+	#foreach my $name (keys %gestionesDesc) {
+	#    	printf "%-8s %s\n", $name, $gestionesDesc{$name};
+	#}
+}
+
+sub leerPorGestion
+{
+        my $gestion=$_[0];
+	my $dir = $ENV{"GRUPO"}.'/'.$ENV{"PROCDIR"};
+	my $DIR;
+	opendir $DIR, $dir or die "opendir $dir - $!";
+	my @entries = readdir $DIR;
+
+	# Obtengo los subdirectorio
+	my @subdirs = grep { -d "$dir/$_" } @entries;
+
+	# Elimino los directorios ocultos
+	@subdirs = grep { !/^\./ } @subdirs;
+	for my $subdir ( @subdirs ) {
+		if (lc($gestion) eq lc($subdir)){
+		   #print "nombre de las carpetas: $subdir\n";
+		   ProcesarGestion($dir."/".$subdir);
+
+	       }
+   	}
+	closedir $DIR;
+}
+
+sub ProcesarGestion
+{
+        my $subdirCompleto = $_[0]; 
+        my $cant_registros=0;
+        my $i=0;
+        
+	my $extension='';
+	opendir(DIR,$subdirCompleto) || die "No se pudo abrir $subdirCompleto\n";
+	my @nodos = grep(!/^\./, (sort(readdir(DIR)))); # esquiva archivos ocultos, . y ..
+	closedir(DIR); 
+        my $nodoViejo='';
+        #inicializo con 0
+                 $registrosEstadisticos {res}[$i]=0;
+                 $registrosEstadisticos {dis}[$i]=0;
+                 $registrosEstadisticos {con}[$i]=0;
+
+	foreach my $nodo (@nodos)  
+	{
+		 #$nodo = $dir.'/'.$nodo; 
+		 $cant_registros= contarRegistros ($nodo,$subdirCompleto);
+                 $extension = ($nodo =~ m/([^.]+)$/)[0]; #guarda la extension del archivo porque me sirve para el hash
+                 $nodo=~ s{\.[^.]+$}{}; #elimina la extensión del nombre del archivo
+
+                
+      		 if ($nodo eq $nodoViejo)
+			{  #si entra acá es porque se repite el año, entonces  hay q disminuir el contador y no hay q inicializar
+                                 $i--;
+          			 $registrosEstadisticos {anio_normas}[$i]=$nodo;      
+          			 $registrosEstadisticos {lc($extension)}[$i]=$cant_registros;
+          			 
+                                 
+                                 
+                                   $i++;
+
+           
+
+			} else 
+        		{  #si entra acá es porque no se repite el año
+                                 
+                		#inicializo con 0
+               		         $registrosEstadisticos {res}[$i]=0;
+                 		 $registrosEstadisticos {dis}[$i]=0;
+                 	         $registrosEstadisticos {con}[$i]=0;
+
+
+                 		$registrosEstadisticos {anio_normas}[$i]=$nodo;
+                 		$registrosEstadisticos {lc($extension)}[$i]=$cant_registros;
+                	        $i++; 
+             
+        		}
+       
+                         $nodoViejo=$nodo;       
+                 #print "años $nodo ,$cant_registros \n";
+	}
+		#print "estadisticas: \n";	
+	    	#print "$name";		
+}
+
+# le pasan el nombre y la ruta y retorna la cantidad de registros de un archivo
+sub contarRegistros
+{ 
+    	my $file = $_[0]; 
+	my $ruta = $_[1]; 
+	my (%posCamposArch) = @_;
+	my $filename = $ruta.'/'.$file;
+	open(my $fh,"<$filename")|| die "NO SE PUEDE REALIZAR LA ACCIÓN. No se encontro el archivo $filename \n";
+	#Leo cada linea 
+          my $count = 0;
+          while( <$fh> ) { 
+		$count++; 
+	  }
+          #print "cantidad de registros $count \n";
+	close($fh);
+        return $count;
+}
+
 sub estadisticas
 {
 	print "Se eligió -e\n"; 
+	#imprimirGestiones();
+	menu_estadistica();
 }
+
+1;#necesario
