@@ -941,10 +941,9 @@ sub imprimirGestiones
          
             #print "gestion: $gestionesDesc{$gestion} ,\n";
 
-         
+        my $resultadoArchivo = ""; 
 	for my $j ( 0 .. $#{ $registrosEstadisticos{anio_normas} } ) 
 	{
-          	my $resultadoArchivo = "";
 	        my $gestionDescripcion = $gestionesDesc{lc($gestion)}; 
 		if(defined $gestionDescripcion){
 		       $resultadoArchivo.= "gestion: $gestionDescripcion\n";
@@ -955,12 +954,12 @@ sub imprimirGestiones
 		$resultadoArchivo.= "Cantidad de resoluciones: $registrosEstadisticos{res}[$j] \n";
 		$resultadoArchivo.= "Cantidad de disposiciones: $registrosEstadisticos{dis}[$j] \n";
 		$resultadoArchivo.= "Cantidad de convenios: $registrosEstadisticos{con}[$j] \n";
-		print $resultadoArchivo;
-		if($pidioGuardar == 1){
-			grabar($resultadoArchivo,"estadistica");	
-		}
-
          }
+		
+	print $resultadoArchivo;
+	if($pidioGuardar == 1){
+		grabar($resultadoArchivo,"estadistica");	
+	}
 
 }
 
