@@ -744,6 +744,8 @@ sub menuFiltros
 		case '9'
 		{
 		    %filtros = ();
+		}else{
+			print "Opción Incorrecta! \n";
 		}
 
 	    }#del switch
