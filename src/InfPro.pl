@@ -5,7 +5,6 @@ use Fcntl qw(:flock);
 use feature qw/switch/; 
 use Switch;
 our %filtros;
-
 our %normasDesc;
 our %gestionesDesc;
 our %emisoresDesc;
@@ -58,7 +57,9 @@ our $sinPalabraClave = 1;
 our $palabraClave;
 our %contenido_resultados_consola;
 our %contenido_resultados_archivo;
-our %registrosEstadisticos; #aca se guardan todos los registros que se mostraran por pantalla
+our %registrosEstadisticos ; #aca se guardan todos los registros que se mostraran por pantalla
+our $listaEmisores;
+
 
 ###### Se valida que el comando no este en ejecución#####
 open(my $script_fh, '<', $0)
@@ -859,27 +860,24 @@ sub menu_estadistica
 { 
 
 
-$registrosEstadisticos {anio_normas}[0]=2007;
-$registrosEstadisticos {cantDisp}[0]=4;
-$registrosEstadisticos {cantRes}[0]=0;
-$registrosEstadisticos {cantConv}[0]=0;
+#$registrosEstadisticos {anio_normas}[0]=2007;
+#$registrosEstadisticos {cantDisp}[0]=4;
+#$registrosEstadisticos {cantRes}[0]=0;
+#$registrosEstadisticos {cantConv}[0]=0;
 
-$registrosEstadisticos {anio_normas}[1]=2008;
-$registrosEstadisticos {cantDisp}[1]=51;
-$registrosEstadisticos {cantRes}[1]=0;
-$registrosEstadisticos {cantConv}[1]=0;
+#$registrosEstadisticos {anio_normas}[1]=2008;
+#$registrosEstadisticos {cantDisp}[1]=51;
+#$registrosEstadisticos {cantRes}[1]=0;
 
 
-print "estadisticas: \n";	
-	foreach my $name (keys %registrosEstadisticos) {
+#print "estadisticas: \n";	
+	#foreach my $name (keys %registrosEstadisticos) {
 	    	#print "$name";
-		for my $i ( 0 .. $#{ $registrosEstadisticos{$name} } ) {
-               		print " $name = $registrosEstadisticos{$name}[$i] \n";      
-    		}
-	}
-
-	cargarMapaGestiones();
-	imprimirGestiones();
+	#	for my $i ( 0 .. $#{ $registrosEstadisticos{$name} } ) {
+               		#print " $name = $registrosEstadisticos{$name}[$i] \n";      
+    		#}
+	#}
+	#imprimirGestiones();
 
 	my $input = '';
 
@@ -915,16 +913,12 @@ print "estadisticas: \n";
 		    #Para la busqueda por descripcion	
 		    #$descripcionFiltros{$gestion} = obtenerCodigoGestion($gestion);		
 		    $input = '';
-		    my $gestionDescripcion = $gestionesDesc{lc($gestion)}; 
-	            if(defined $gestionDescripcion){
-		   	printf "gestion: ".$gestionDescripcion;
-		    } 
-
-		    leerPorGestion($gestion);
+		    leerPorGestion(lc($gestion));
+                    imprimirGestiones(lc($gestion));
 		}
 		case '3'{}
 		else{
-			print "Opción Incorrecta! \n";			
+			print "Opción Incorrecta! \n";
 		}
 
 	    }#del switch
@@ -935,10 +929,30 @@ print "estadisticas: \n";
 
 sub imprimirGestiones
 {
-	print "Descripcion de las Gestiones: \n";	
-	foreach my $name (keys %gestionesDesc) {
-	    	printf "%-8s %s\n", $name, $gestionesDesc{$name};
-	}
+	my $gestion=$_[0];
+         
+            #print "gestion: $gestionesDesc{$gestion} ,\n";
+
+         
+	for my $j ( 0 .. $#{ $registrosEstadisticos{anio_normas} } ) 
+		{
+
+               my $gestionDescripcion = $gestionesDesc{lc($gestion)}; 
+	            if(defined $gestionDescripcion){
+		   	printf "gestion: $gestionDescripcion  ";
+		    } 
+               print " año:  $registrosEstadisticos{anio_normas}[$j] \n";
+               print "cantidad de resoluciones: $registrosEstadisticos{res}[$j] \n";
+               print "cantidad de disposiciones: $registrosEstadisticos{dis}[$j] \n";
+               print "cantidad de convenios: $registrosEstadisticos{con}[$j] \n";
+
+
+                }
+
+        #print "Descripcion de las Gestiones: \n";	
+	#foreach my $name (keys %gestionesDesc) {
+	#    	printf "%-8s %s\n", $name, $gestionesDesc{$name};
+	#}
 }
 
 sub leerPorGestion
@@ -956,7 +970,7 @@ sub leerPorGestion
 	@subdirs = grep { !/^\./ } @subdirs;
 	for my $subdir ( @subdirs ) {
 		if (lc($gestion) eq lc($subdir)){
-		   print "nombre de las carpetas: $subdir\n";
+		   #print "nombre de las carpetas: $subdir\n";
 		   ProcesarGestion($dir."/".$subdir);
 
 	       }
@@ -968,19 +982,58 @@ sub ProcesarGestion
 {
         my $subdirCompleto = $_[0]; 
         my $cant_registros=0;
-
+        my $i=0;
+        
+	my $extension='';
 	opendir(DIR,$subdirCompleto) || die "No se pudo abrir $subdirCompleto\n";
 	my @nodos = grep(!/^\./, (sort(readdir(DIR)))); # esquiva archivos ocultos, . y ..
 	closedir(DIR); 
+        my $nodoViejo='';
+        #inicializo con 0
+                 $registrosEstadisticos {res}[$i]=0;
+                 $registrosEstadisticos {dis}[$i]=0;
+                 $registrosEstadisticos {con}[$i]=0;
 
 	foreach my $nodo (@nodos)  
 	{
 		 #$nodo = $dir.'/'.$nodo; 
 		 $cant_registros= contarRegistros ($nodo,$subdirCompleto);
+                 $extension = ($nodo =~ m/([^.]+)$/)[0]; #guarda la extension del archivo porque me sirve para el hash
                  $nodo=~ s{\.[^.]+$}{}; #elimina la extensión del nombre del archivo
-                 print "años $nodo ,$cant_registros \n";
-	}
 
+                
+      		 if ($nodo eq $nodoViejo)
+			{  #si entra acá es porque se repite el año, entonces  hay q disminuir el contador y no hay q inicializar
+                                 $i--;
+          			 $registrosEstadisticos {anio_normas}[$i]=$nodo;      
+          			 $registrosEstadisticos {lc($extension)}[$i]=$cant_registros;
+          			 
+                                 
+                                 
+                                   $i++;
+
+           
+
+			} else 
+        		{  #si entra acá es porque no se repite el año
+                                 
+                		#inicializo con 0
+               		         $registrosEstadisticos {res}[$i]=0;
+                 		 $registrosEstadisticos {dis}[$i]=0;
+                 	         $registrosEstadisticos {con}[$i]=0;
+
+
+                 		$registrosEstadisticos {anio_normas}[$i]=$nodo;
+                 		$registrosEstadisticos {lc($extension)}[$i]=$cant_registros;
+                	        $i++; 
+             
+        		}
+       
+                         $nodoViejo=$nodo;       
+                 #print "años $nodo ,$cant_registros \n";
+	}
+		#print "estadisticas: \n";	
+	    	#print "$name";		
 }
 
 # le pasan el nombre y la ruta y retorna la cantidad de registros de un archivo
@@ -1001,11 +1054,10 @@ sub contarRegistros
         return $count;
 }
 
-
 sub estadisticas
 {
 	print "Se eligió -e\n"; 
-	imprimirGestiones();
+	#imprimirGestiones();
 	menu_estadistica();
 }
 
