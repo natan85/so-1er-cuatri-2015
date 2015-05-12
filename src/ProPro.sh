@@ -363,6 +363,10 @@ function procesarArchivos {
 	Glog="$GRUPO/$BINDIR/Glog.sh"
 	Mover="$GRUPO/$BINDIR/Mover.sh"
 	cantArchivos=$(printf '%s\n' "${archivos[@]}" | wc -l)
+	if [ ${#archivos[@]} -eq 0 ]
+	then
+		cantArchivos=0
+	fi
 	cantAceptados=0
 	cantRechazados=0
 	$Glog "$nomCom" "Inicio de ProPro" "INFO"
@@ -377,7 +381,7 @@ function procesarArchivos {
 		validarArchivo
 		
 		read=false
-		while read -r registro
+		while read -r registro || [ -n "$registro" ]
 		do
 			read=true
 			procesarRegistro
