@@ -158,6 +158,7 @@ sub validarGuardarInforme
 
 }
 
+
 sub leerArchivosSubdirectoriosResultados
 {
 	my $ruta = $ENV{"GRUPO"}.'/'.$ENV{"INFODIR"};
@@ -549,7 +550,7 @@ sub imprimirYGrabarResultadosOrdenados()
 	print "**************************\n";
 
 	if($pidioGuardar == 1){
-		grabar($resultadoArchivo);	
+		grabar($resultadoArchivo,"resultado");	
 	}	
 
 }
@@ -558,9 +559,10 @@ sub imprimirYGrabarResultadosOrdenados()
 sub grabar
 {
 	my $resultado = $_[0];
+	my $nombre = $_[1];
 	my $ruta = $ENV{"GRUPO"}.'/'.$ENV{"INFODIR"};
 	my $epoc = time();
-	my $nombreArchivo = $ruta."/resultado_".$epoc.".txt";
+	my $nombreArchivo = $ruta."/".$nombre."_".$epoc.".txt";
 	
 	if(defined $resultado){
 		open FILE, ">".$nombreArchivo or die $!; 
@@ -572,6 +574,7 @@ sub grabar
 	}
 
 }
+
 
 #*************************METODOS AUXILIARES PARA OBTENCION DE DATOS********************
 sub obtenerCodigoGestion
@@ -940,26 +943,25 @@ sub imprimirGestiones
 
          
 	for my $j ( 0 .. $#{ $registrosEstadisticos{anio_normas} } ) 
-		{
+	{
+          	my $resultadoArchivo = "";
+	        my $gestionDescripcion = $gestionesDesc{lc($gestion)}; 
+		if(defined $gestionDescripcion){
+		       $resultadoArchivo.= "gestion: $gestionDescripcion\n";
+		} 
+		$resultadoArchivo.= "Año: $registrosEstadisticos{anio_normas}[$j] \n";
+		$resultadoArchivo.= "Emisores:  \n";
+		$resultadoArchivo.= "$registrosEstadisticos{emisores}[$j]";	
+		$resultadoArchivo.= "Cantidad de resoluciones: $registrosEstadisticos{res}[$j] \n";
+		$resultadoArchivo.= "Cantidad de disposiciones: $registrosEstadisticos{dis}[$j] \n";
+		$resultadoArchivo.= "Cantidad de convenios: $registrosEstadisticos{con}[$j] \n";
+		print $resultadoArchivo;
+		if($pidioGuardar == 1){
+			grabar($resultadoArchivo,"estadistica");	
+		}
 
-               my $gestionDescripcion = $gestionesDesc{lc($gestion)}; 
-	            if(defined $gestionDescripcion){
-		   	printf "gestion: $gestionDescripcion  ";
-		    } 
-               print " Año:  $registrosEstadisticos{anio_normas}[$j] \n";
-	       print " Emisores:  \n";
-	       print "$registrosEstadisticos{emisores}[$j]";	
-               print "cantidad de resoluciones: $registrosEstadisticos{res}[$j] \n";
-               print "cantidad de disposiciones: $registrosEstadisticos{dis}[$j] \n";
-               print "cantidad de convenios: $registrosEstadisticos{con}[$j] \n";
+         }
 
-
-                }
-
-        #print "Descripcion de las Gestiones: \n";	
-	#foreach my $name (keys %gestionesDesc) {
-	#    	printf "%-8s %s\n", $name, $gestionesDesc{$name};
-	#}
 }
 
 sub leerPorGestion
@@ -1075,8 +1077,8 @@ sub contarRegistros
 
 sub estadisticas
 {
-	print "Se eligió -e\n"; 
 	#imprimirGestiones();
+	validarGuardarInforme();
 	menu_estadistica();
 }
 
