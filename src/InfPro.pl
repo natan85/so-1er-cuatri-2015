@@ -8,6 +8,7 @@ our %filtros;
 our %normasDesc;
 our %gestionesDesc;
 our %emisoresDesc;
+our %emisoresArchivoDesc;
 
 our %posCamposArchConsulta = (
 			'fechaNorma' => 1,
@@ -156,6 +157,7 @@ sub validarGuardarInforme
 	}
 
 }
+
 
 sub leerArchivosSubdirectoriosResultados
 {
@@ -548,7 +550,7 @@ sub imprimirYGrabarResultadosOrdenados()
 	print "**************************\n";
 
 	if($pidioGuardar == 1){
-		grabar($resultadoArchivo);	
+		grabar($resultadoArchivo,"resultado");	
 	}	
 
 }
@@ -557,9 +559,10 @@ sub imprimirYGrabarResultadosOrdenados()
 sub grabar
 {
 	my $resultado = $_[0];
+	my $nombre = $_[1];
 	my $ruta = $ENV{"GRUPO"}.'/'.$ENV{"INFODIR"};
 	my $epoc = time();
-	my $nombreArchivo = $ruta."/resultado_".$epoc.".txt";
+	my $nombreArchivo = $ruta."/".$nombre."_".$epoc.".txt";
 	
 	if(defined $resultado){
 		open FILE, ">".$nombreArchivo or die $!; 
@@ -571,6 +574,7 @@ sub grabar
 	}
 
 }
+
 
 #*************************METODOS AUXILIARES PARA OBTENCION DE DATOS********************
 sub obtenerCodigoGestion
@@ -915,6 +919,10 @@ sub menu_estadistica
 		    $input = '';
 		    leerPorGestion(lc($gestion));
                     imprimirGestiones(lc($gestion));
+		    #print "Emisores Archivo: \n";	
+			#foreach my $name (keys %emisoresArchivoDesc) {
+			 #   	printf "%-8s %s\n", $name, $emisoresArchivoDesc{$name};
+			#}	
 		}
 		case '3'{}
 		else{
@@ -935,24 +943,25 @@ sub imprimirGestiones
 
          
 	for my $j ( 0 .. $#{ $registrosEstadisticos{anio_normas} } ) 
-		{
+	{
+          	my $resultadoArchivo = "";
+	        my $gestionDescripcion = $gestionesDesc{lc($gestion)}; 
+		if(defined $gestionDescripcion){
+		       $resultadoArchivo.= "gestion: $gestionDescripcion\n";
+		} 
+		$resultadoArchivo.= "Año: $registrosEstadisticos{anio_normas}[$j] \n";
+		$resultadoArchivo.= "Emisores:  \n";
+		$resultadoArchivo.= "$registrosEstadisticos{emisores}[$j]";	
+		$resultadoArchivo.= "Cantidad de resoluciones: $registrosEstadisticos{res}[$j] \n";
+		$resultadoArchivo.= "Cantidad de disposiciones: $registrosEstadisticos{dis}[$j] \n";
+		$resultadoArchivo.= "Cantidad de convenios: $registrosEstadisticos{con}[$j] \n";
+		print $resultadoArchivo;
+		if($pidioGuardar == 1){
+			grabar($resultadoArchivo,"estadistica");	
+		}
 
-               my $gestionDescripcion = $gestionesDesc{lc($gestion)}; 
-	            if(defined $gestionDescripcion){
-		   	printf "gestion: $gestionDescripcion  ";
-		    } 
-               print " año:  $registrosEstadisticos{anio_normas}[$j] \n";
-               print "cantidad de resoluciones: $registrosEstadisticos{res}[$j] \n";
-               print "cantidad de disposiciones: $registrosEstadisticos{dis}[$j] \n";
-               print "cantidad de convenios: $registrosEstadisticos{con}[$j] \n";
+         }
 
-
-                }
-
-        #print "Descripcion de las Gestiones: \n";	
-	#foreach my $name (keys %gestionesDesc) {
-	#    	printf "%-8s %s\n", $name, $gestionesDesc{$name};
-	#}
 }
 
 sub leerPorGestion
@@ -997,9 +1006,11 @@ sub ProcesarGestion
 	foreach my $nodo (@nodos)  
 	{
 		 #$nodo = $dir.'/'.$nodo; 
-		 $cant_registros= contarRegistros ($nodo,$subdirCompleto);
+		 my $nombreArchivo = $nodo;
                  $extension = ($nodo =~ m/([^.]+)$/)[0]; #guarda la extension del archivo porque me sirve para el hash
                  $nodo=~ s{\.[^.]+$}{}; #elimina la extensión del nombre del archivo
+		 my $keyArchivo = lc($extension)."-".$nodo;  
+		 $cant_registros= contarRegistros ($nombreArchivo,$subdirCompleto,lc($extension),$nodo);
 
                 
       		 if ($nodo eq $nodoViejo)
@@ -1007,29 +1018,23 @@ sub ProcesarGestion
                                  $i--;
           			 $registrosEstadisticos {anio_normas}[$i]=$nodo;      
           			 $registrosEstadisticos {lc($extension)}[$i]=$cant_registros;
-          			 
-                                 
-                                 
-                                   $i++;
-
-           
-
+				 $registrosEstadisticos {emisores}[$i]=$emisoresArchivoDesc{$keyArchivo};
+                                 $i++;
 			} else 
         		{  #si entra acá es porque no se repite el año
                                  
                 		#inicializo con 0
-               		         $registrosEstadisticos {res}[$i]=0;
-                 		 $registrosEstadisticos {dis}[$i]=0;
-                 	         $registrosEstadisticos {con}[$i]=0;
-
-
+               		        $registrosEstadisticos {res}[$i]=0;
+                 		$registrosEstadisticos {dis}[$i]=0;
+                 	        $registrosEstadisticos {con}[$i]=0;
                  		$registrosEstadisticos {anio_normas}[$i]=$nodo;
                  		$registrosEstadisticos {lc($extension)}[$i]=$cant_registros;
+				$registrosEstadisticos {emisores}[$i]=$emisoresArchivoDesc{$keyArchivo};
                 	        $i++; 
-             
         		}
        
-                         $nodoViejo=$nodo;       
+                         $nodoViejo=$nodo; 
+		     
                  #print "años $nodo ,$cant_registros \n";
 	}
 		#print "estadisticas: \n";	
@@ -1041,12 +1046,28 @@ sub contarRegistros
 { 
     	my $file = $_[0]; 
 	my $ruta = $_[1]; 
+	my $gestion = $_[2];
+	my $anio = $_[3];
+	my $keyArchivo = $gestion."-".$anio;
 	my (%posCamposArch) = @_;
 	my $filename = $ruta.'/'.$file;
 	open(my $fh,"<$filename")|| die "NO SE PUEDE REALIZAR LA ACCIÓN. No se encontro el archivo $filename \n";
 	#Leo cada linea 
           my $count = 0;
-          while( <$fh> ) { 
+          while(my $row = <$fh> ) { 
+		chomp($row);
+		my @data = split(";",$row);
+		my $codigoEmisor = $data[$posCamposArchConsulta{'emisor'}];
+ 		my $emisorMapa = $emisoresDesc{lc($codigoEmisor)};
+		if (exists($emisoresArchivoDesc{$keyArchivo})){
+			my $emisorArchDesc = $emisoresArchivoDesc{$keyArchivo};
+			#No esta agregado el emisor
+			if(index(lc($emisorArchDesc),lc($emisorMapa)) == -1){
+				$emisoresArchivoDesc{$keyArchivo} = $emisorArchDesc.$emisorMapa."\n";		
+			}	
+		}else{
+			$emisoresArchivoDesc{$keyArchivo} = $emisorMapa."\n";
+		}
 		$count++; 
 	  }
           #print "cantidad de registros $count \n";
@@ -1056,8 +1077,8 @@ sub contarRegistros
 
 sub estadisticas
 {
-	print "Se eligió -e\n"; 
 	#imprimirGestiones();
+	validarGuardarInforme();
 	menu_estadistica();
 }
 
